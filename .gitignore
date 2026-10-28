@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.egg-info/
+build/
+dist/
+.playwright-mcp/
+.pytest_cache/
+demo-logs/
+demo-report.html
+log-report.html
+packaging/icon.*
+packaging/wizard-*.bmp
+packaging/mac-*.png

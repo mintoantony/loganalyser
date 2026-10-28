@@ -1,0 +1,7 @@
+# Codex project settings (used once you trust this project in Codex).
+# LogAnalyser MCP server; a big log folder can take a few minutes, so the tool timeout is long.
+[mcp_servers.loganalyser]
+command = 'D:\VanguardProjects\Agents\LogAnalyser\.venv\Scripts\loganalyser-mcp.exe'
+args = []
+startup_timeout_sec = 30
+tool_timeout_sec = 900

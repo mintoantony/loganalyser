@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "loganalyser": {
+      "type": "stdio",
+      "command": "D:\\VanguardProjects\\Agents\\LogAnalyser\\.venv\\Scripts\\loganalyser-mcp.exe",
+      "args": []
+    }
+  }
+}

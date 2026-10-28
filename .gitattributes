@@ -1,0 +1,7 @@
+# Keep LF in the repository; shell scripts must stay LF to run on a Mac.
+* text=auto
+*.sh text eol=lf
+*.png binary
+*.ico binary
+*.icns binary
+*.bmp binary

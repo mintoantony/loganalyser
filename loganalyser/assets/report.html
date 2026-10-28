@@ -1,0 +1,1415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wdth,wght@75..100,400..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: dark;
+  --plane: #0e161f;
+  --surface: #142029;
+  --raised: #1a2834;
+  --line: #243442;
+  --line-strong: #33475a;
+  --ink: #e6edf3;
+  --ink-2: #a8b6c4;
+  --muted: #7a8a9a;
+  --mark: #ff6fae;
+  --mark-ink: #ff8fc0;
+  --mark-wash: rgba(255, 111, 174, 0.18);
+  --mark-wash-strong: rgba(255, 111, 174, 0.32);
+  --critical: #d03b3b;
+  --critical-ink: #f07171;
+  --serious: #ec835a;
+  --warning: #fab219;
+  --warning-ink: #f5c04a;
+  --good: #0ca30c;
+  --good-ink: #3cc43c;
+  --neutral: #4d6275;
+  --info-ink: #7fb2e8;
+  --grid: #22313e;
+  --focus: #8fd3ff;
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --plane: #eef2f5;
+  --surface: #ffffff;
+  --raised: #f5f8fa;
+  --line: #dbe3ea;
+  --line-strong: #c3cfd9;
+  --ink: #13202c;
+  --ink-2: #43535f;
+  --muted: #687886;
+  --mark: #d6337f;
+  --mark-ink: #b01f66;
+  --mark-wash: rgba(214, 51, 127, 0.14);
+  --mark-wash-strong: rgba(214, 51, 127, 0.26);
+  --critical-ink: #b42727;
+  --warning-ink: #8a5d00;
+  --good-ink: #006300;
+  --neutral: #9fb0bf;
+  --info-ink: #2a63a8;
+  --grid: #e3e9ee;
+  --focus: #1f6fd1;
+  --shadow: 0 12px 36px rgba(19, 32, 44, 0.16);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --plane: #eef2f5; --surface: #ffffff; --raised: #f5f8fa; --line: #dbe3ea; --line-strong: #c3cfd9;
+    --ink: #13202c; --ink-2: #43535f; --muted: #687886;
+    --mark: #d6337f; --mark-ink: #b01f66; --mark-wash: rgba(214, 51, 127, 0.14); --mark-wash-strong: rgba(214, 51, 127, 0.26);
+    --critical-ink: #b42727; --warning-ink: #8a5d00; --good-ink: #006300; --neutral: #9fb0bf; --info-ink: #2a63a8;
+    --grid: #e3e9ee; --focus: #1f6fd1; --shadow: 0 12px 36px rgba(19, 32, 44, 0.16);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--plane);
+  color: var(--ink);
+  font: 15px/1.5 var(--sans);
+  font-variation-settings: "wdth" 100;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+a { color: inherit; }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.ink2 { color: var(--ink-2); }
+[hidden] { display: none !important; }
+
+/* ---------- shell ---------- */
+.app { display: grid; grid-template-columns: 216px 1fr; height: 100vh; }
+.rail {
+  border-right: 1px solid var(--line);
+  padding: 20px 14px;
+  display: flex; flex-direction: column; gap: 22px;
+  overflow-y: auto;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; font-weight: 650; font-size: 16px; letter-spacing: -0.01em; }
+.embedded .brand, .embedded .theme-btn { display: none; }
+.brand svg { flex: none; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav a {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--ink-2);
+}
+.nav a:hover { background: var(--raised); color: var(--ink); }
+.nav a[aria-current="page"] { background: var(--raised); color: var(--ink); box-shadow: inset 2px 0 0 var(--mark); }
+.nav .count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rail-foot { margin-top: auto; padding: 0 8px; font-size: 12.5px; color: var(--muted); display: flex; flex-direction: column; gap: 10px; }
+.theme-btn {
+  display: inline-flex; align-items: center; gap: 8px; background: none; border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 10px; cursor: pointer; color: var(--ink-2); width: fit-content;
+}
+.theme-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+.main { overflow-y: auto; min-width: 0; }
+.view { padding: 28px 40px 64px; max-width: 1280px; }
+.view.full { max-width: none; height: 100%; display: flex; flex-direction: column; padding-bottom: 20px; }
+.view-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+h1, h2, h3 { margin: 0; letter-spacing: -0.015em; }
+.view-head h1 { font-size: 24px; font-weight: 650; }
+h2 { font-size: 17px; font-weight: 640; }
+h3 { font-size: 14px; font-weight: 620; }
+.lede { color: var(--ink-2); max-width: 70ch; margin: 6px 0 0; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 28px; color: var(--ink-2); font-size: 13.5px; }
+.facts b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ---------- verdict ---------- */
+.verdict { padding: 8px 0 28px; border-bottom: 1px solid var(--line); }
+.verdict .kicker { color: var(--ink-2); font-size: 14px; display: flex; align-items: center; gap: 10px; }
+.verdict .kicker .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--mark); box-shadow: 0 0 0 4px var(--mark-wash); }
+.verdict h1 {
+  font-size: clamp(30px, 4.2vw, 52px); line-height: 1.04; font-weight: 680;
+  font-variation-settings: "wdth" 82; letter-spacing: -0.03em; margin: 12px 0 14px; max-width: 22ch;
+  text-wrap: balance;
+}
+.verdict .summary { font-size: 17px; color: var(--ink-2); max-width: 62ch; margin: 0 0 22px; }
+.likelihood { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
+.likelihood .meter { width: min(320px, 60vw); height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.likelihood .meter i { display: block; height: 100%; background: var(--mark); border-radius: 4px; }
+.likelihood .val { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.likelihood .what { color: var(--muted); font-size: 13px; }
+
+.evidence-line {
+  margin: 22px 0 0; border: 1px solid var(--line); border-left: 3px solid var(--mark);
+  border-radius: 8px; background: var(--surface); overflow: hidden;
+}
+.evidence-line .meta { display: flex; gap: 16px; flex-wrap: wrap; padding: 8px 14px; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.evidence-line pre { margin: 0; padding: 12px 14px; font: 12.5px/1.6 var(--mono); white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; }
+mark.hl { background: var(--mark-wash-strong); color: inherit; border-radius: 3px; padding: 0 2px; box-shadow: inset 0 -2px 0 var(--mark); }
+mark.q { background: rgba(250, 178, 25, 0.28); color: inherit; border-radius: 2px; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; padding: 28px 0; border-bottom: 1px solid var(--line); }
+.section { padding: 28px 0; border-bottom: 1px solid var(--line); }
+.section:last-child { border-bottom: 0; }
+.section > h2, .cols h2 { margin-bottom: 14px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+
+.factors { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.factors li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; }
+.factors .sign { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font: 600 13px var(--mono); }
+.factors .sign.up { background: var(--mark-wash); color: var(--mark-ink); }
+.factors .sign.down { background: var(--raised); color: var(--muted); border: 1px solid var(--line); }
+.factors .label { font-weight: 600; }
+.factors .fd { color: var(--ink-2); font-size: 13.5px; word-break: break-word; }
+
+.thread { list-style: none; margin: 0; padding: 0; position: relative; }
+.thread li { position: relative; display: grid; grid-template-columns: 74px 18px 1fr; gap: 10px; padding-bottom: 14px; }
+.thread li::before { content: ""; position: absolute; left: 92px; top: 18px; bottom: -2px; width: 2px; background: var(--line); }
+.thread li:last-child::before { display: none; }
+.thread .t { text-align: right; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; padding-top: 2px; }
+.thread .node { width: 12px; height: 12px; margin: 5px 0 0 3px; border-radius: 50%; background: var(--surface); border: 2px solid var(--neutral); z-index: 1; position: relative; }
+.thread li.cause .node { border-color: var(--mark); background: var(--mark); box-shadow: 0 0 0 4px var(--mark-wash); }
+.thread li.cause .t { color: var(--mark-ink); font-weight: 600; }
+.thread li.lv-ERROR .node, .thread li.lv-FATAL .node { border-color: var(--critical); }
+.thread li.lv-WARN .node { border-color: var(--warning); }
+.thread .what { min-width: 0; }
+.thread .what .pt { font-family: var(--mono); font-size: 12.5px; word-break: break-word; }
+.thread .what .sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.thread button.linkish { text-align: left; }
+
+.linkish { background: none; border: 0; padding: 0; cursor: pointer; color: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.linkish:hover { text-decoration-color: var(--mark); }
+
+.fixes { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); }
+.fixes li::marker { color: var(--mark); }
+
+.others { display: flex; flex-direction: column; }
+.other { display: grid; grid-template-columns: 1fr 160px 56px; gap: 16px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); text-align: left; background: none; border-left: 0; border-right: 0; border-bottom: 0; cursor: pointer; width: 100%; }
+.other:hover .ot { color: var(--mark-ink); }
+.other .ot { font-weight: 560; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.other .os { font-size: 12.5px; color: var(--muted); }
+.bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ink-2); border-radius: 3px; }
+
+/* ---------- level badges ---------- */
+.lv { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.lv::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--neutral); flex: none; }
+.lv.FATAL::before { background: var(--critical); border-radius: 50%; box-shadow: 0 0 0 2px rgba(208, 59, 59, 0.3); }
+.lv.ERROR::before { background: var(--critical); }
+.lv.WARN::before { background: var(--warning); transform: rotate(45deg) scale(0.85); }
+.lv.FATAL, .lv.ERROR { color: var(--critical-ink); }
+.lv.WARN { color: var(--warning-ink); }
+.lv.INFO { color: var(--info-ink); }
+.lv.DEBUG, .lv.TRACE { color: var(--muted); }
+
+/* ---------- pattern text ---------- */
+.pt { font-family: var(--mono); font-size: 12.5px; }
+.ph { color: var(--info-ink); background: var(--raised); border: 1px solid var(--line); border-radius: 4px; padding: 0 3px; font-size: 11.5px; }
+
+/* ---------- charts ---------- */
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; overflow: visible; user-select: none; }
+.chart .axis text, .chart text { fill: var(--muted); font: 11px var(--sans); font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin-bottom: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.tip {
+  position: fixed; z-index: 50; pointer-events: none; background: var(--raised); border: 1px solid var(--line-strong);
+  border-radius: 8px; padding: 8px 10px; font-size: 12.5px; box-shadow: var(--shadow); min-width: 160px; max-width: 360px;
+}
+.tip .tt { font-weight: 600; margin-bottom: 4px; }
+.tip .row { display: flex; justify-content: space-between; gap: 18px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.tip .row i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+.brush-bar { display: flex; align-items: center; gap: 12px; margin-top: 10px; font-size: 13px; color: var(--ink-2); min-height: 32px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line-strong); background: var(--raised);
+  padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap;
+}
+.btn:hover { border-color: var(--ink-2); }
+.btn.primary { background: var(--mark); border-color: var(--mark); color: #1b0610; font-weight: 600; }
+:root[data-theme="light"] .btn.primary { color: #fff; }
+.btn.ghost { background: none; border-color: transparent; color: var(--ink-2); }
+.btn.ghost:hover { color: var(--ink); border-color: var(--line); }
+
+
+/* ---------- tables ---------- */
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.field {
+  display: flex; align-items: center; gap: 8px; border: 1px solid var(--line-strong); background: var(--surface);
+  border-radius: 8px; padding: 0 10px; height: 36px; min-width: 0;
+}
+.field:focus-within { border-color: var(--focus); }
+.field input { border: 0; background: none; outline: none; min-width: 0; width: 100%; height: 100%; }
+.field input::placeholder { color: var(--muted); }
+.field.grow { flex: 1 1 320px; }
+select.field { padding: 0 8px; cursor: pointer; }
+.toggle {
+  border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; height: 28px; padding: 0 8px;
+  font: 600 12px var(--mono); cursor: pointer; color: var(--muted);
+}
+.toggle[aria-pressed="true"] { color: var(--ink); background: var(--raised); border-color: var(--ink-2); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 15px;
+  border: 1px solid var(--line-strong); background: none; cursor: pointer; font-size: 12.5px; color: var(--ink-2);
+}
+.chip[aria-pressed="true"] { background: var(--raised); color: var(--ink); border-color: var(--ink-2); }
+.chip .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.chip.filter { border-style: dashed; border-color: var(--mark); color: var(--ink); }
+.chip.filter b { font-weight: 600; max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+table.grid { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.grid th { white-space: nowrap; text-align: left; font-weight: 600; color: var(--muted); font-size: 12.5px; padding: 8px 10px; border-bottom: 1px solid var(--line-strong); position: sticky; top: 0; background: var(--plane); z-index: 1; }
+table.grid th.r, table.grid td.r { text-align: right; }
+table.grid th button { background: none; border: 0; padding: 0; cursor: pointer; color: inherit; font-weight: inherit; }
+table.grid th button[data-dir]::after { content: attr(data-dir); margin-left: 4px; }
+table.grid td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.grid tbody tr { cursor: pointer; }
+table.grid tbody tr:hover td { background: var(--surface); }
+table.grid td .pt { word-break: break-word; }
+.spark { display: block; }
+.tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line); color: var(--ink-2); white-space: nowrap; }
+.tag.mk { border-color: var(--mark); color: var(--mark-ink); background: var(--mark-wash); }
+.tag.new { border-color: var(--critical); color: var(--critical-ink); }
+.tag.gone { color: var(--muted); }
+
+/* ---------- causes list ---------- */
+.cause { border-top: 1px solid var(--line); }
+.cause:first-child { border-top: 0; }
+.cause > button {
+  width: 100%; display: grid; grid-template-columns: 36px minmax(0, 1fr) 180px 64px 20px; gap: 16px; align-items: center;
+  padding: 16px 4px; background: none; border: 0; cursor: pointer; text-align: left;
+}
+.cause .rank { font: 600 14px var(--mono); color: var(--muted); }
+.cause.top .rank { color: var(--mark-ink); }
+.cause .ct { font-weight: 600; font-size: 15.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cause .cs { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.cause .pct { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.cause .chev { transition: transform .18s ease; color: var(--muted); }
+.cause[open] .chev { transform: rotate(90deg); }
+.cause .body { display: none; padding: 0 4px 24px 56px; }
+.cause[open] .body { display: block; }
+.cause .body .cols { padding: 16px 0 0; border: 0; }
+.cause.top .bar i { background: var(--mark); }
+
+/* ---------- traces ---------- */
+.split { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 24px; min-height: 0; flex: 1; }
+.list { overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.list button { display: block; width: 100%; text-align: left; padding: 10px 14px; background: none; border: 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.list button:hover { background: var(--raised); }
+.list button[aria-selected="true"] { background: var(--raised); box-shadow: inset 3px 0 0 var(--mark); }
+.list .id { font: 12.5px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .sub { font-size: 12px; color: var(--muted); display: flex; gap: 12px; margin-top: 3px; }
+.list .sub .e { color: var(--critical-ink); }
+.pane { overflow-y: auto; min-width: 0; }
+.swim { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 14px 16px; margin-bottom: 16px; }
+.events { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.events .ev { display: grid; grid-template-columns: 96px 150px 64px minmax(0, 1fr); gap: 12px; padding: 7px 12px; border-bottom: 1px solid var(--line); font-size: 12.5px; cursor: pointer; align-items: baseline; }
+.events .ev:last-child { border-bottom: 0; }
+.events .ev:hover { background: var(--surface); }
+.events .ev .m { font-family: var(--mono); word-break: break-word; }
+.events .ev .f { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- explorer ---------- */
+.explorer { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.ex-body { display: grid; grid-template-columns: minmax(0, 1fr); flex: 1; min-height: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.ex-body.with-detail { grid-template-columns: minmax(0, 1fr) minmax(320px, 40%); }
+.vlist { overflow: auto; position: relative; min-height: 0; outline: none; }
+.vlist .spacer { position: relative; }
+.xrow {
+  position: absolute; left: 0; right: 0; height: 26px; display: grid;
+  grid-template-columns: 4px 104px 62px 140px minmax(0, 1fr); gap: 10px; align-items: center;
+  font: 12.5px var(--mono); padding-right: 12px; cursor: pointer; white-space: nowrap; border-bottom: 1px solid transparent;
+}
+.xrow:hover { background: var(--raised); }
+.xrow.sel { background: var(--mark-wash); }
+.xrow .stripe { height: 100%; }
+.xrow.l-ERROR .stripe, .xrow.l-FATAL .stripe { background: var(--critical); }
+.xrow.l-WARN .stripe { background: var(--warning); }
+.xrow .ts { color: var(--muted); }
+.xrow .file { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; font-family: var(--sans); font-size: 12px; }
+.xrow .msg { overflow: hidden; text-overflow: ellipsis; }
+.xrow .more { color: var(--muted); margin-left: 8px; font-family: var(--sans); font-size: 11.5px; }
+.xrow .lv { font-family: var(--sans); }
+.ex-status { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; color: var(--muted); padding: 8px 2px 0; flex-wrap: wrap; }
+.detail { border-left: 1px solid var(--line); overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.detail > * { flex-shrink: 0; }
+.detail .dh { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.detail pre { margin: 0; font: 12.5px/1.6 var(--mono); white-space: pre-wrap; word-break: break-word; background: var(--plane); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; max-height: 360px; overflow: auto; }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; font-size: 12.5px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-family: var(--mono); word-break: break-all; }
+.ctx { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.ctx div { display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 3px 10px; font: 12px/1.5 var(--mono); cursor: pointer; }
+.ctx div:hover { background: var(--raised); }
+.ctx div.here { background: var(--mark-wash); }
+.ctx div .n { color: var(--muted); text-align: right; }
+.ctx div span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctx div.l-ERROR span:last-child, .ctx div.l-FATAL span:last-child { color: var(--critical-ink); }
+.ctx div.l-WARN span:last-child { color: var(--warning-ink); }
+
+.empty { padding: 48px 24px; text-align: center; color: var(--ink-2); max-width: 56ch; margin: 0 auto; }
+.empty h2 { margin-bottom: 8px; color: var(--ink); }
+.empty code { font-family: var(--mono); font-size: 12.5px; background: var(--raised); border: 1px solid var(--line); padding: 2px 6px; border-radius: 4px; }
+.note { font-size: 13px; color: var(--ink-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: var(--surface); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; flex-wrap: wrap; }
+.tabs button { background: none; border: 0; padding: 10px 12px; cursor: pointer; color: var(--ink-2); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--mark); font-weight: 600; }
+.files-table td:first-child { font-weight: 560; }
+
+.reveal { animation: reveal .5s cubic-bezier(.2, .7, .2, 1) both; }
+.reveal.d1 { animation-delay: .08s; } .reveal.d2 { animation-delay: .16s; } .reveal.d3 { animation-delay: .24s; }
+@keyframes reveal { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* ---------- motion: entrances that show how the story unfolds ---------- */
+.anim .factors li, .anim .thread li, .anim .stagger > * {
+  animation: rise-in .5s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 70ms + 200ms);
+}
+.anim .thread li::before { transform-origin: top; animation: draw-down .45s ease-out both; animation-delay: calc(var(--i, 0) * 70ms + 420ms); }
+.anim .thread li .node { animation: pop .45s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: calc(var(--i, 0) * 70ms + 260ms); }
+.meter i, .bar i, .grow-x { transform-origin: left; animation: grow-x 1.1s cubic-bezier(.2, .7, .2, 1) both; animation-delay: .25s; }
+svg .rise { transform-box: fill-box; transform-origin: bottom; animation: rise-y .6s cubic-bezier(.2, .7, .2, 1) both; }
+.verdict .kicker .dot { animation: ping 1.6s ease-out 3; }
+@keyframes rise-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes draw-down { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes grow-x { from { transform: scaleX(0); } }
+@keyframes rise-y { from { transform: scaleY(0); } }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 var(--mark-wash-strong); } 100% { box-shadow: 0 0 0 12px transparent; } }
+@keyframes ring { from { stroke-dashoffset: var(--len); } }
+
+/* ---------- AI second opinion ---------- */
+.ai-badge { display: inline-grid; place-items: center; min-width: 28px; height: 22px; padding: 0 6px; border-radius: 6px; font: 700 11px var(--sans); letter-spacing: .02em; background: var(--ink); color: var(--plane); }
+.ai-strip { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin: 0 0 22px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); text-decoration: none; color: var(--ink-2); font-size: 14px; flex-wrap: wrap; }
+.ai-strip b { color: var(--ink); font-weight: 600; }
+.ai-strip .go { margin-left: auto; color: var(--ink); font-size: 13px; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.ai-strip:hover .go { text-decoration-color: var(--mark); }
+.ai-strip.agree { border-left: 3px solid var(--good); }
+.ai-strip.differ { border-left: 3px solid var(--warning); }
+.ai-strip.err { border-left: 3px solid var(--line-strong); }
+.ai-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center; padding: 8px 0 26px; border-bottom: 1px solid var(--line); }
+.ai-head h1 { font-size: clamp(28px, 3.6vw, 46px); line-height: 1.05; font-weight: 680; font-variation-settings: "wdth" 82; letter-spacing: -0.03em; margin: 12px 0 12px; max-width: 24ch; text-wrap: balance; }
+.ring { position: relative; width: 132px; height: 132px; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .track { stroke: var(--line); }
+.ring .arc { stroke: var(--mark); stroke-linecap: round; animation: ring 1.4s cubic-bezier(.2, .7, .2, 1) both; animation-delay: .3s; }
+.ring .val { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.ring .val b { font-size: 30px; font-weight: 680; font-variant-numeric: tabular-nums; line-height: 1; }
+.ring .val span { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.stance { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink-2); }
+.stance i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+.stance.differ i { background: var(--warning); }
+.lines { display: flex; flex-direction: column; gap: 10px; }
+.lref { display: block; width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 9px 12px; cursor: pointer; }
+.lref:hover { border-color: var(--mark); }
+.lref .lm { display: flex; gap: 12px; font-size: 12px; color: var(--muted); margin-bottom: 4px; flex-wrap: wrap; }
+.lref .lt { font: 12.5px/1.5 var(--mono); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lref .why { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+.lref.l-ERROR, .lref.l-FATAL { border-left: 3px solid var(--critical); }
+.lref.l-WARN { border-left: 3px solid var(--warning); }
+.when { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 6px 16px; }
+.when h3 { padding-top: 2px; color: var(--mark-ink); font-size: 13px; }
+.when ul { margin: 0 0 14px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.when li b { font-weight: 600; }
+.when li div { color: var(--ink-2); font-size: 13.5px; }
+.ai-foot { font-size: 12.5px; color: var(--muted); display: flex; gap: 8px 22px; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .anim .factors li, .anim .thread li, .anim .stagger > *, .anim .thread li::before, .anim .thread li .node,
+  .meter i, .bar i, .grow-x, svg .rise, .verdict .kicker .dot, .ring .arc { animation: none !important; }
+  .cause .chev { transition: none; }
+}
+@media (max-width: 960px) { .ai-head { grid-template-columns: 1fr; } .ring { width: 104px; height: 104px; } .when { grid-template-columns: 1fr; } }
+
+@media (max-width: 960px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; min-height: 100vh; }
+  .rail { flex-direction: row; align-items: center; border-right: 0; border-bottom: 1px solid var(--line); padding: 10px 16px; gap: 12px; overflow-x: auto; scrollbar-width: none; position: sticky; top: 0; background: var(--plane); z-index: 5; }
+  .nav { flex-direction: row; }
+  .nav a { white-space: nowrap; }
+  .nav .count { display: none; }
+  .rail-foot { margin: 0 0 0 auto; flex-direction: row; }
+  .rail-foot .gen { display: none; }
+  .main { overflow: visible; }
+  .view { padding: 20px 16px 48px; }
+  .view.full { height: auto; min-height: calc(100vh - 60px); }
+  .cols { grid-template-columns: 1fr; gap: 28px; }
+  .split { grid-template-columns: 1fr; }
+  .list { max-height: 300px; }
+  .ex-body.with-detail { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .detail { border-left: 0; border-top: 1px solid var(--line); max-height: 60vh; }
+  .vlist { height: 60vh; }
+  .xrow { grid-template-columns: 4px 84px 54px minmax(0, 1fr); }
+  .xrow .file { display: none; }
+  .cause > button { grid-template-columns: 28px minmax(0, 1fr) 54px 16px; }
+  .cause > button .bar { display: none; }
+  .cause .body { padding-left: 4px; }
+  .other { grid-template-columns: 1fr 56px; }
+  .other .bar { display: none; }
+  .events .ev { grid-template-columns: 80px minmax(0, 1fr); }
+  .events .ev .f, .events .ev .lv { display: none; }
+  table.grid .hide-sm { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Report sections">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="2.4" rx="1.2" fill="currentColor" opacity=".35"/><rect x="2" y="10.8" width="14" height="2.4" rx="1.2" fill="var(--mark)"/><rect x="2" y="17.6" width="17" height="2.4" rx="1.2" fill="currentColor" opacity=".35"/></svg>
+      LogAnalyser
+    </div>
+    <div class="nav" id="nav"></div>
+    <div class="rail-foot">
+      <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch colour theme">
+        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg>
+        <span id="themeLabel">Theme</span>
+      </button>
+      <div class="gen" id="genInfo"></div>
+    </div>
+  </nav>
+  <main class="main" id="main"></main>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script id="report-data" type="application/json">__DATA__</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById("report-data").textContent);
+const LV = D.levels;
+const R = D.records;
+const rowByIdx = new Map();
+R.forEach((r, i) => rowByIdx.set(r[0], i));
+const T = new Map(D.templates.map(t => [t.id, t]));
+const F = D.meta.files;
+const SIG = new Map(D.signatures.map(s => [s.id, s]));
+const $ = (sel, el = document) => el.querySelector(sel);
+const el = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstElementChild; };
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const nf = new Intl.NumberFormat();
+const n = (v) => nf.format(v ?? 0);
+const pad = (v, w = 2) => String(v).padStart(w, "0");
+const spansDays = D.meta.first != null && D.meta.last != null && Math.floor(D.meta.first / 86400) !== Math.floor(D.meta.last / 86400);
+function fmtTime(ts, ms = false) {
+  if (ts == null) return "—";
+  const d = new Date(ts * 1000);
+  let s = `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+  if (ms) s += "." + pad(d.getUTCMilliseconds(), 3);
+  if (spansDays) s = `${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ` + s;
+  return s;
+}
+function fmtDate(ts) {
+  if (ts == null) return "—";
+  const d = new Date(ts * 1000);
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
+}
+function fmtDur(sec) {
+  sec = Math.abs(sec);
+  if (sec < 1) return `${Math.round(sec * 1000)} ms`;
+  if (sec < 60) return `${sec < 10 ? sec.toFixed(1) : Math.round(sec)}s`;
+  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+  if (m < 60) return `${m}m ${pad(s)}s`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `${h}h ${pad(m % 60)}m`;
+  return `${Math.floor(h / 24)}d ${h % 24}h`;
+}
+const fileName = (i) => F[i] ? F[i].name : "?";
+const levelName = (i) => LV[i] || "INFO";
+function patternHtml(text) {
+  return esc(text).replace(/&lt;(\*|[A-Z]+|\.\.\.)&gt;/g, (_, p) => `<span class="ph">${p === "*" ? "…" : p.toLowerCase()}</span>`);
+}
+function pyToJsRegex(src) {
+  try { return new RegExp(src.replace(/\(\?[a-z]+\)/g, ""), "gim"); } catch { return null; }
+}
+function highlightRules(text, ruleIds) {
+  // Highlight the text that matched a known signature, so the reader sees why it was recognised.
+  const ranges = [];
+  for (const id of ruleIds) {
+    const sig = SIG.get(id);
+    if (!sig) continue;
+    for (const p of sig.patterns) {
+      const re = pyToJsRegex(p);
+      if (!re) continue;
+      let m;
+      while ((m = re.exec(text)) && ranges.length < 40) {
+        if (!m[0]) { re.lastIndex++; continue; }
+        ranges.push([m.index, m.index + m[0].length]);
+      }
+    }
+  }
+  return markRanges(text, ranges, "hl");
+}
+function markRanges(text, ranges, cls) {
+  if (!ranges.length) return esc(text);
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  for (const r of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1]); else merged.push([...r]);
+  }
+  let out = "", pos = 0;
+  for (const [a, b] of merged) { out += esc(text.slice(pos, a)) + `<mark class="${cls}">` + esc(text.slice(a, b)) + "</mark>"; pos = b; }
+  return out + esc(text.slice(pos));
+}
+function recText(r) { return r[7] ? r[6] + "\n" + r[7] : r[6]; }
+
+/* ---------- theme ---------- */
+const root = document.documentElement;
+function storedTheme() { try { return localStorage.getItem("loganalyser-theme"); } catch { return null; } }
+function applyTheme(t) {
+  if (t) root.setAttribute("data-theme", t); else root.removeAttribute("data-theme");
+  const effective = t || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  $("#themeLabel").textContent = effective === "dark" ? "Dark theme" : "Light theme";
+}
+applyTheme(storedTheme());
+// Inside the desktop app the app's own rail carries the brand and the theme switch.
+if (window.self !== window.top) root.classList.add("embedded");
+$("#themeBtn").addEventListener("click", () => {
+  const current = root.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  const next = current === "dark" ? "light" : "dark";
+  try { localStorage.setItem("loganalyser-theme", next); } catch {}
+  applyTheme(next);
+  rerenderCharts();
+});
+$("#genInfo").innerHTML = `Report made ${esc(D.meta.generated.replace("T", " ").replace("+00:00", " UTC"))}<br>All times in UTC`;
+
+/* ---------- tooltip ---------- */
+const tip = $("#tip");
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let left = x + 14, top = y + 14;
+  if (left + w > innerWidth - 8) left = x - w - 14;
+  if (top + h > innerHeight - 8) top = y - h - 14;
+  tip.style.left = Math.max(8, left) + "px"; tip.style.top = Math.max(8, top) + "px";
+}
+const hideTip = () => { tip.hidden = true; };
+
+/* ---------- navigation ---------- */
+const views = [
+  { id: "verdict", label: "Likely cause" },
+  ...(D.ai ? [{ id: "ai", label: "AI analysis", count: D.ai.status === "ok" ? null : "!" }] : []),
+  { id: "timeline", label: "Timeline" },
+  { id: "causes", label: "All causes", count: D.causes.length },
+  { id: "patterns", label: "Patterns", count: D.templates.length },
+  { id: "requests", label: "Linked requests", count: D.meta.traceStats.total },
+  { id: "compare", label: "Compare runs", count: D.compare ? D.compare.new.length : null },
+  { id: "explorer", label: "Explorer", count: D.meta.records },
+  { id: "files", label: "Files", count: F.length },
+];
+const nav = $("#nav");
+for (const v of views) {
+  nav.append(el(`<a href="#${v.id}" data-view="${v.id}"><span>${v.label}</span>${v.count != null ? `<span class="count">${typeof v.count === "number" ? n(v.count) : esc(v.count)}</span>` : ""}</a>`));
+}
+const main = $("#main");
+let currentView = null;
+const renderers = {};
+let chartRenderers = [];
+function rerenderCharts() { chartRenderers.forEach(fn => fn()); }
+function go(view, opts) {
+  if (!renderers[view]) view = "verdict";
+  currentView = view;
+  for (const a of nav.querySelectorAll("a")) {
+    if (a.dataset.view === view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  }
+  chartRenderers = [];
+  main.innerHTML = "";
+  main.scrollTop = 0;
+  renderers[view](opts || {});
+}
+window.addEventListener("hashchange", () => go(location.hash.slice(1)));
+let resizeTimer;
+window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(rerenderCharts, 120); });
+
+/* ---------- explorer state (shared) ---------- */
+const ex = { q: "", regex: false, cs: false, levels: new Set([0, 1, 2, 3, 4, 5]), files: new Set(F.map((_, i) => i)), template: null, id: null, range: null, rows: null, selected: null };
+function openExplorer(patch) {
+  Object.assign(ex, {
+    template: null, id: null, range: null, q: "", regex: false,
+    levels: new Set([0, 1, 2, 3, 4, 5]), files: new Set(F.map((_, i) => i)),
+  }, patch);
+  ex.selected = patch && patch.select != null ? patch.select : null;
+  if (location.hash !== "#explorer") { history.pushState(null, "", "#explorer"); }
+  go("explorer");
+}
+
+/* ---------- shared pieces ---------- */
+function causeFactorsHtml(c) {
+  if (!c.factors.length) return `<p class="muted">No strong signals either way.</p>`;
+  return `<ul class="factors">${c.factors.map((f, i) => `
+    <li style="--i:${i}"><span class="sign ${f.weight < 0 ? "down" : "up"}" aria-label="${f.weight < 0 ? "Counts against" : "Counts for"}">${f.weight < 0 ? "−" : "+"}</span>
+    <div><div class="label">${esc(f.label)}</div><div class="fd">${esc(f.detail)}</div></div></li>`).join("")}</ul>`;
+}
+function chainHtml(c) {
+  const first = c.firstRecord != null && rowByIdx.has(c.firstRecord) ? R[rowByIdx.get(c.firstRecord)] : null;
+  const head = `<li class="cause" style="--i:0"><span class="t">${fmtTime(c.first)}</span><span class="node"></span>
+    <div class="what"><div><b>${esc(c.title)}</b></div><div class="sub">${first ? esc(fileName(first[1])) + " · " : ""}${n(c.count)} events</div></div></li>`;
+  const steps = c.chain.map((s, k) => {
+    const t = T.get(s.template);
+    return `<li class="lv-${s.level}" style="--i:${k + 1}"><span class="t">${esc(s.deltaText)}</span><span class="node"></span>
+      <div class="what"><button class="linkish pt" data-tpl="${s.template}">${patternHtml(t ? t.text : "")}</button>
+      <div class="sub">${s.title ? esc(s.title) + " · " : ""}${s.files.map(fileName).map(esc).join(", ")} · ${n(s.count)} events</div></div></li>`;
+  }).join("");
+  return `<ol class="thread">${head}${steps}</ol>${c.chain.length ? "" : `<p class="muted">No other new failures followed it.</p>`}`;
+}
+function bindTemplateLinks(scope) {
+  scope.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tpl]");
+    if (b) { openExplorer({ template: +b.dataset.tpl }); return; }
+    const r = e.target.closest("[data-rec]");
+    if (r) {
+      const idx = +r.dataset.rec;
+      openExplorer({ select: idx, range: null });
+    }
+  });
+}
+function evidenceHtml(c) {
+  const idx = c.firstRecord;
+  if (idx == null || !rowByIdx.has(idx)) return "";
+  const r = R[rowByIdx.get(idx)];
+  const t = T.get(r[4]);
+  const ruleIds = [...new Set(c.templates.map(id => T.get(id)?.rule).filter(Boolean).concat(c.id))];
+  return `<figure class="evidence-line" style="margin-left:0;margin-right:0">
+    <div class="meta"><span>First new occurrence</span><span class="num">${fmtTime(r[2], true)}</span><span>${esc(fileName(r[1]))} line ${n(r[5])}</span>
+    <button class="linkish" data-rec="${r[0]}">Open in Explorer</button></div>
+    <pre>${highlightRules(recText(r).split("\n").slice(0, 14).join("\n"), ruleIds)}</pre></figure>`;
+}
+function precursorsHtml() {
+  const pre = D.incident && D.incident.precursors || [];
+  if (!pre.length) return "";
+  return `<section class="section"><div class="section-head"><h2>What changed just before</h2>
+    <span class="muted" style="font-size:13px">Events seen for the first time shortly before the first failure</span></div>
+    <ol class="thread">${pre.map(p => {
+      const t = T.get(p.template);
+      return `<li class="lv-${p.level}"><span class="t">${esc(p.beforeText.replace(" before", ""))} <span class="muted">before</span></span><span class="node"></span>
+        <div class="what"><button class="linkish pt" data-rec="${p.record}">${patternHtml(t ? t.text : "")}</button>
+        <div class="sub">${fmtTime(p.first)} · ${p.files.map(fileName).map(esc).join(", ")}${p.count > 1 ? " · " + n(p.count) + " times" : ""}</div></div></li>`;
+    }).join("")}</ol></section>`;
+}
+
+/* ---------- view: verdict ---------- */
+renderers.verdict = () => {
+  const v = el(`<div class="view"></div>`);
+  main.append(v);
+  const c = D.causes[0];
+  const m = D.meta;
+  const span = m.first != null ? fmtDur(m.last - m.first) : "—";
+  if (!c) {
+    v.append(el(`<div class="empty"><h2>No warnings or errors found</h2>
+      <p>${n(m.records)} events in ${F.length} file${F.length === 1 ? "" : "s"} read cleanly. Open the Explorer to read them,
+      or run again with <code>--match "your pattern"</code> to look for something specific.</p>
+      <p><a class="btn" href="#explorer">Open the Explorer</a></p></div>`));
+    return;
+  }
+  const firstRow = c.firstRecord != null && rowByIdx.has(c.firstRecord) ? R[rowByIdx.get(c.firstRecord)] : null;
+  const lk = Math.round(c.likelihood);
+  v.innerHTML = `
+    <header class="verdict">
+      <div class="kicker reveal"><span class="dot" aria-hidden="true"></span>Most likely cause, from ${n(m.records)} events in ${F.length} file${F.length === 1 ? "" : "s"} over ${span}</div>
+      <h1 class="reveal d1">${esc(c.title)}</h1>
+      <p class="summary reveal d1">${esc(c.summary)}</p>
+      <div class="likelihood reveal d2">
+        <span class="val" data-count="${lk}">${lk}%</span>
+        <span class="meter" role="img" aria-label="${lk} percent relative likelihood"><i style="width:${Math.max(2, lk)}%"></i></span>
+        <span class="what">relative likelihood, ranked first of ${D.causes.length} candidate cause${D.causes.length === 1 ? "" : "s"}</span>
+      </div>
+      ${aiStripHtml()}
+      <div class="facts reveal d2">
+        <span>Started <b>${fmtTime(c.first)}</b>${firstRow ? ` in <b>${esc(fileName(firstRow[1]))}</b>` : ""}</span>
+        <span><b>${n(c.count)}</b> events across <b>${c.files.length}</b> file${c.files.length === 1 ? "" : "s"}</span>
+        <span>Last seen <b>${fmtTime(c.last)}</b></span>
+        <span>Category <b>${esc(c.category)}</b></span>
+      </div>
+      <div class="reveal d3">${evidenceHtml(c)}</div>
+    </header>
+    <div class="cols">
+      <section><h2>Why it ranks first</h2>${causeFactorsHtml(c)}</section>
+      <section><h2>What happened next</h2>${chainHtml(c)}</section>
+    </div>
+    ${precursorsHtml()}
+    <section class="section"><div class="section-head"><h2>When it happened</h2><a class="linkish" href="#timeline" style="font-size:13px">Open the full timeline</a></div><p class="muted" style="margin:-6px 0 12px;font-size:13px">Warnings and errors only. Click a bar to read those lines.</p><div id="miniChart"></div></section>
+    <section class="section"><h2>What to try</h2><ul class="fixes">${c.fixes.map(f => `<li>${esc(f)}</li>`).join("")}</ul></section>
+    ${D.causes.length > 1 ? `<section class="section"><div class="section-head"><h2>Other possible causes</h2><a class="linkish" href="#causes" style="font-size:13px">Compare all ${D.causes.length}</a></div>
+      <div class="others">${D.causes.slice(1, 5).map(o => `
+        <button class="other" data-cause="${o.rank}"><div><div class="ot">${esc(o.title)}</div><div class="os">${esc(o.category)} · ${n(o.count)} events · from ${fmtTime(o.first)}</div></div>
+        <span class="bar"><i style="width:${Math.max(2, o.likelihood)}%"></i></span><span class="num" style="text-align:right">${o.likelihood < 1 ? "<1" : Math.round(o.likelihood)}%</span></button>`).join("")}
+      </div></section>` : ""}
+  `;
+  v.classList.add("anim");
+  v.querySelectorAll("[data-count]").forEach(countUp);
+  bindTemplateLinks(v);
+  v.querySelectorAll("[data-cause]").forEach(b => b.addEventListener("click", () => { history.pushState(null, "", "#causes"); go("causes", { open: +b.dataset.cause }); }));
+  const mini = $("#miniChart", v);
+  const draw = () => timelineChart(mini, { height: 150, brush: false, lanes: false, cause: c, problemsOnly: true });
+  chartRenderers.push(draw); draw();
+};
+
+/* ---------- motion helpers ---------- */
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function countUp(node) {
+  const to = +node.dataset.count, suffix = node.textContent.replace(/^[\d.,]+/, "");
+  if (reduceMotion || !to) return;
+  const start = performance.now(), dur = 1100;
+  const tick = (now) => {
+    const t = Math.min(1, (now - start) / dur), eased = 1 - Math.pow(1 - t, 3);
+    node.textContent = Math.round(to * eased) + suffix;
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  node.textContent = "0" + suffix;
+  requestAnimationFrame(tick);
+}
+
+/* ---------- AI second opinion ---------- */
+function aiStripHtml() {
+  const ai = D.ai;
+  if (!ai) return "";
+  if (ai.status !== "ok") {
+    return `<a class="ai-strip err reveal d2" href="#ai"><span class="ai-badge">AI</span><span>The AI second opinion from <b>${esc(ai.providerLabel)}</b> did not complete.</span><span class="go">See why</span></a>`;
+  }
+  const rc = ai.analysis.rootCause;
+  const agree = rc.agreesWithEngine;
+  return `<a class="ai-strip ${agree ? "agree" : "differ"} reveal d2" href="#ai"><span class="ai-badge">AI</span>
+    <span><b>${esc(ai.providerLabel)}</b> ${agree ? "agrees" : "reads it differently"}: ${esc(rc.title)} <span class="muted">(${esc(rc.confidence)} confidence)</span></span>
+    <span class="go">Read its analysis</span></a>`;
+}
+function lineRefHtml(idx, why, i = 0) {
+  if (idx == null || !rowByIdx.has(idx)) return "";
+  const r = R[rowByIdx.get(idx)];
+  const lv = levelName(r[3]);
+  return `<button class="lref l-${lv}" data-rec="${r[0]}" style="--i:${i}">
+    <div class="lm"><span class="num">${fmtTime(r[2], true)}</span><span>${esc(fileName(r[1]))} line ${n(r[5])}</span><span class="lv ${lv}">${lv[0] + lv.slice(1).toLowerCase()}</span></div>
+    <div class="lt">${esc(r[6].slice(0, 400))}</div>${why ? `<div class="why">${esc(why)}</div>` : ""}</button>`;
+}
+renderers.ai = () => {
+  const v = el(`<div class="view anim"></div>`);
+  main.append(v);
+  const ai = D.ai;
+  if (!ai) { go("verdict"); return; }
+  if (ai.status !== "ok") {
+    v.innerHTML = `<div class="view-head"><h1>AI analysis</h1></div>
+      <div class="empty"><h2>The AI step did not complete</h2><p>${esc(ai.error || "No reason was given.")}</p>
+      <p class="muted">${esc(ai.providerLabel)}${ai.model ? " · " + esc(ai.model) : ""}. The built-in analysis is unaffected. Fix the setting and run the analysis again, or use “Ask AI again” in the app.</p>
+      <p><a class="btn" href="#verdict">Back to the likely cause</a></p></div>`;
+    return;
+  }
+  const a = ai.analysis, rc = a.rootCause;
+  const engineTop = D.causes[0];
+  const preferred = rc.engineCandidate ? D.causes.find(c => c.rank === rc.engineCandidate) : null;
+  const len = 2 * Math.PI * 56;
+  const stance = rc.agreesWithEngine
+    ? `<span class="stance"><i></i>Agrees with the built-in analysis</span>`
+    : `<span class="stance differ"><i></i>Differs from the built-in analysis</span>`;
+  const grouped = { now: [], soon: [], later: [] };
+  a.actions.forEach(x => grouped[x.when].push(x));
+  v.innerHTML = `
+    <header class="ai-head">
+      <div>
+        <div class="kicker reveal" style="display:flex;gap:10px;align-items:center;color:var(--ink-2);font-size:14px;flex-wrap:wrap"><span class="ai-badge">AI</span>Second opinion from ${esc(ai.providerLabel)}, ${esc(ai.model)} ${stance}</div>
+        <h1 class="reveal d1">${esc(rc.title)}</h1>
+        <p class="summary reveal d1" style="font-size:17px;color:var(--ink-2);max-width:66ch;margin:0">${esc(a.summary)}</p>
+      </div>
+      <div class="ring reveal d2" role="img" aria-label="${rc.confidencePct} percent confidence">
+        <svg viewBox="0 0 132 132"><circle class="track" cx="66" cy="66" r="56" fill="none" stroke-width="10"/>
+          <circle class="arc" cx="66" cy="66" r="56" fill="none" stroke-width="10" stroke-dasharray="${len}" stroke-dashoffset="${len * (1 - rc.confidencePct / 100)}" style="--len:${len}"/></svg>
+        <div class="val"><b data-count="${rc.confidencePct}">${rc.confidencePct}%</b><span>${esc(rc.confidence)} confidence</span></div>
+      </div>
+    </header>
+    <section class="section">
+      <h2>Why it thinks so</h2>
+      <p class="lede" style="max-width:76ch">${esc(rc.explanation)}</p>
+      <p class="note" style="margin-top:14px">${rc.agreesWithEngine
+        ? `This matches the built-in analysis, which ranked <b>${esc(engineTop ? engineTop.title : "nothing")}</b> first.`
+        : `The built-in analysis ranked <b>${esc(engineTop ? engineTop.title : "nothing")}</b> first. ${preferred ? `The AI prefers its candidate #${preferred.rank}, <b>${esc(preferred.title)}</b>.` : "The AI's answer does not match any of its candidates."} Compare the evidence on both pages before acting.`}</p>
+    </section>
+    <div class="cols">
+      <section><h2>Evidence it cites</h2><div class="lines stagger">${rc.evidence.map((e, i) => lineRefHtml(e.line, e.why, i)).join("") || `<p class="muted">It cited no specific lines.</p>`}</div></section>
+      <section><h2>How it unfolded</h2>${a.timeline.length ? `<ol class="thread">${a.timeline.map((t, i) => `
+        <li class="${i === 0 ? "cause" : ""}" style="--i:${i}"><span class="t">${esc(t.time)}</span><span class="node"></span>
+        <div class="what">${t.line != null && rowByIdx.has(t.line) ? `<button class="linkish" data-rec="${t.line}" style="text-align:left">${esc(t.event)}</button>` : esc(t.event)}</div></li>`).join("")}</ol>` : `<p class="muted">No timeline given.</p>`}</section>
+    </div>
+    ${a.factors.length ? `<section class="section"><h2>What made it worse</h2><div class="stagger" style="display:flex;flex-direction:column;gap:16px">${a.factors.map((f, i) => `
+      <div style="--i:${i}"><h3>${esc(f.title)}</h3><p class="lede" style="margin:4px 0 8px">${esc(f.explanation)}</p><div class="lines">${f.lines.map(l => lineRefHtml(l)).join("")}</div></div>`).join("")}</div></section>` : ""}
+    <section class="section"><h2>What to do</h2><div class="when">${["now", "soon", "later"].filter(k => grouped[k].length).map(k => `
+      <h3>${{ now: "Now", soon: "Next", later: "Later" }[k]}</h3><ul class="stagger">${grouped[k].map((x, i) => `<li style="--i:${i}"><b>${esc(x.action)}</b><div>${esc(x.why)}</div></li>`).join("")}</ul>`).join("") || `<p class="muted">No actions given.</p>`}</div></section>
+    ${a.impact ? `<section class="section"><h2>Impact</h2><p class="lede">${esc(a.impact)}</p></section>` : ""}
+    ${a.matches.length ? `<section class="section"><h2>Lines that belong together</h2><p class="muted" style="margin:-6px 0 14px;font-size:13px">Events in different files that the AI matched to the same request or moment.</p>
+      <div style="display:flex;flex-direction:column;gap:18px">${a.matches.map(m => `<div><h3 style="margin-bottom:8px">${esc(m.description)}</h3><div class="lines">${m.lines.map(l => lineRefHtml(l)).join("")}</div></div>`).join("")}</div></section>` : ""}
+    ${a.alternatives.length ? `<section class="section"><h2>Other explanations it considered</h2><ul class="factors">${a.alternatives.map((x, i) => `
+      <li style="--i:${i}"><span class="sign down">−</span><div><div class="label">${esc(x.title)}</div><div class="fd">${esc(x.whyLessLikely)}</div></div></li>`).join("")}</ul></section>` : ""}
+    ${a.checks.length ? `<section class="section"><h2>Worth checking</h2><ul class="fixes">${a.checks.map(c => `<li>${esc(c)}</li>`).join("")}</ul></section>` : ""}
+    <section class="section"><div class="ai-foot">
+      <span>${n(ai.linesSent)} log lines sent${ai.redacted ? ", with emails, IPs, secrets and user names hidden" : ", as written"}</span>
+      ${ai.inputTokens ? `<span>${n(ai.inputTokens)} tokens in, ${n(ai.outputTokens)} out</span>` : ""}
+      <span>Answered in ${ai.seconds}s</span>
+      <span>AI answers can be wrong. Every line it cites opens in the Explorer, so check them.</span></div></section>`;
+  v.querySelectorAll("[data-count]").forEach(countUp);
+  bindTemplateLinks(v);
+};
+
+/* ---------- timeline chart ---------- */
+function cssVar(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+function timelineChart(host, { height = 240, brush = true, lanes = true, cause = D.causes[0], problemsOnly = false } = {}) {
+  const tl = D.timeline;
+  host.innerHTML = "";
+  if (!tl.counts.length) { host.append(el(`<p class="muted">These logs have no timestamps, so there is no timeline.</p>`)); return; }
+  const series = [
+    { key: "err", label: "Errors", color: cssVar("--critical"), idx: [4, 5] },
+    { key: "warn", label: "Warnings", color: cssVar("--warning"), idx: [3] },
+  ];
+  if (!problemsOnly) series.push({ key: "info", label: "Info and debug", color: cssVar("--neutral"), idx: [0, 1, 2] });
+  const stacks = tl.counts.map(c => series.map(s => s.idx.reduce((a, i) => a + c[i], 0)));
+  const markColor = cssVar("--mark");
+  host.append(el(`<div class="legend">${series.map(s => `<span><i style="background:${s.color}"></i>${s.label}</span>`).join("")}
+    ${D.incident ? `<span><i style="background:${cssVar("--mark-wash-strong")};outline:1px dashed ${markColor}"></i>Incident window</span>` : ""}
+    ${cause ? `<span><i style="background:${markColor};width:2px;height:12px"></i>Cause first seen</span>` : ""}</div>`));
+  const wrap = el(`<div class="chart"></div>`);
+  host.append(wrap);
+  const W = Math.max(320, wrap.clientWidth || host.clientWidth || 800);
+  const H = height, padL = lanes ? 170 : 44, padR = 8, padT = 8, padB = 22;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const nB = stacks.length;
+  const bw = iw / nB;
+  const totals = stacks.map(s => s.reduce((a, b) => a + b, 0));
+  // Scale on errors + warnings when info traffic would flatten them.
+  const maxTotal = Math.max(1, ...totals);
+  const ticks = niceTicks(maxTotal);
+  const yMax = ticks[ticks.length - 1];
+  const y = v => padT + ih - (v / yMax) * ih;
+  const x = i => padL + i * bw;
+  const t0 = tl.start, bucket = tl.bucket;
+  const tx = ts => padL + ((ts - t0) / bucket) * bw;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Events over time by level">`;
+  for (const t of ticks) svg += `<line x1="${padL}" x2="${W - padR}" y1="${y(t)}" y2="${y(t)}" stroke="${cssVar("--grid")}" stroke-width="1"/><text x="${padL - 8}" y="${y(t) + 4}" text-anchor="end">${compact(t)}</text>`;
+  if (D.incident) {
+    const a = tx(D.incident.start), b = tx(D.incident.end);
+    svg += `<rect x="${a}" y="${padT}" width="${Math.max(2, b - a)}" height="${ih}" fill="${cssVar("--mark-wash")}" stroke="${markColor}" stroke-dasharray="3 3" stroke-width="1"/>`;
+  }
+  const gap = bw > 4 ? 1 : 0;
+  const animate = !host.dataset.drawn;
+  host.dataset.drawn = "1";
+  stacks.forEach((s, i) => {
+    let acc = 0;
+    const motion = animate ? ` class="rise" style="animation-delay:${Math.min(i * 7, 600)}ms"` : "";
+    s.forEach((v, k) => {
+      if (!v) return;
+      const y1 = y(acc + v), y0 = y(acc);
+      svg += `<rect${motion} x="${x(i) + gap}" y="${y1}" width="${Math.max(1, bw - gap * 2)}" height="${Math.max(0.5, y0 - y1 - (acc ? 1 : 0))}" fill="${series[k].color}" rx="${bw > 6 ? 1.5 : 0}"/>`;
+      acc += v;
+    });
+  });
+  svg += `<line x1="${padL}" x2="${W - padR}" y1="${padT + ih}" y2="${padT + ih}" stroke="${cssVar("--line-strong")}"/>`;
+  const step = Math.max(1, Math.ceil(nB / Math.max(2, Math.floor(iw / 90))));
+  for (let i = 0; i < nB; i += step) svg += `<text x="${x(i)}" y="${H - 4}" text-anchor="${i === 0 ? "start" : "middle"}">${fmtTime(t0 + i * bucket).replace(/:\d\d$/, step * bucket >= 60 ? "" : "$&")}</text>`;
+  if (cause && cause.first != null) {
+    const cx = tx(cause.first);
+    svg += `<line x1="${cx}" x2="${cx}" y1="${padT - 4}" y2="${padT + ih}" stroke="${markColor}" stroke-width="2"/><circle cx="${cx}" cy="${padT - 4}" r="4" fill="${markColor}"/>`;
+  }
+  svg += `<rect class="hit" x="${padL}" y="${padT}" width="${iw}" height="${ih}" fill="transparent" style="cursor:${brush ? "crosshair" : "pointer"}"/>`;
+  svg += `<rect class="sel" x="0" y="${padT}" width="0" height="${ih}" fill="${cssVar("--mark-wash-strong")}" pointer-events="none"/>`;
+  svg += `<line class="hover" x1="0" x2="0" y1="${padT}" y2="${padT + ih}" stroke="${cssVar("--ink-2")}" stroke-width="1" opacity="0" pointer-events="none"/>`;
+  svg += `</svg>`;
+  wrap.innerHTML = svg;
+  const svgEl = wrap.querySelector("svg"), hit = svgEl.querySelector(".hit"), sel = svgEl.querySelector(".sel"), hover = svgEl.querySelector(".hover");
+  const toBucket = (evt) => {
+    const rect = svgEl.getBoundingClientRect();
+    const px = (evt.clientX - rect.left) * (W / rect.width);
+    return Math.min(nB - 1, Math.max(0, Math.floor((px - padL) / bw)));
+  };
+  let dragFrom = null, dragTo = null;
+  hit.addEventListener("pointermove", (e) => {
+    const i = toBucket(e);
+    hover.setAttribute("x1", x(i) + bw / 2); hover.setAttribute("x2", x(i) + bw / 2); hover.setAttribute("opacity", ".6");
+    const s = stacks[i];
+    showTip(`<div class="tt">${fmtTime(t0 + i * bucket)} – ${fmtTime(t0 + (i + 1) * bucket)}</div>
+      ${series.map((se, k) => `<div class="row"><span><i style="background:${se.color}"></i>${se.label}</span><b>${n(s[k])}</b></div>`).join("")}
+      <div class="row muted" style="margin-top:4px">${brush ? "Click or drag to read these lines" : "Click to read these lines"}</div>`, e.clientX, e.clientY);
+    if (dragFrom != null) {
+      dragTo = i;
+      const a = Math.min(dragFrom, dragTo), b = Math.max(dragFrom, dragTo);
+      sel.setAttribute("x", x(a)); sel.setAttribute("width", (b - a + 1) * bw);
+    }
+  });
+  hit.addEventListener("pointerleave", () => { hideTip(); hover.setAttribute("opacity", "0"); });
+  hit.addEventListener("pointerdown", (e) => { if (!brush) return; dragFrom = toBucket(e); dragTo = dragFrom; hit.setPointerCapture(e.pointerId); sel.setAttribute("x", x(dragFrom)); sel.setAttribute("width", bw); });
+  hit.addEventListener("pointerup", (e) => {
+    const i = toBucket(e);
+    const a = dragFrom != null ? Math.min(dragFrom, i) : i, b = dragFrom != null ? Math.max(dragFrom, i) : i;
+    dragFrom = null; hideTip();
+    openExplorer({ range: [t0 + a * bucket, t0 + (b + 1) * bucket] });
+  });
+  if (lanes) {
+    // Drawn on the same x scale as the chart above, so each slice lines up.
+    const maxF = Math.max(1, ...tl.byFile.flat());
+    const origin = D.incident ? D.incident.originFile : null;
+    const crit = cssVar("--critical");
+    const laneH = 22, LH = tl.byFile.length * laneH;
+    let s = `<svg viewBox="0 0 ${W} ${LH}" height="${LH}" role="img" aria-label="Errors by file over time">`;
+    tl.byFile.forEach((row, fi) => {
+      const yy = fi * laneH;
+      const label = F[fi].name.length > 24 ? F[fi].name.slice(0, 23) + "…" : F[fi].name;
+      s += `<text x="${padL - 10}" y="${yy + 15}" text-anchor="end" style="fill:${fi === origin ? cssVar("--mark-ink") : cssVar("--ink-2")};font-size:12px;font-weight:${fi === origin ? 600 : 400}">${esc(label)}</text>`;
+      s += `<rect x="${padL}" y="${yy + 2}" width="${iw}" height="${laneH - 4}" fill="${cssVar("--raised")}" rx="3"/>`;
+      row.forEach((v, bi) => {
+        if (v) s += `<rect x="${(x(bi) + 0.5).toFixed(2)}" y="${yy + 2}" width="${Math.max(1, bw - 1).toFixed(2)}" height="${laneH - 4}" fill="${crit}" opacity="${(0.25 + 0.75 * Math.sqrt(v / maxF)).toFixed(2)}"/>`;
+      });
+    });
+    s += `<rect class="lhit" x="${padL}" y="0" width="${iw}" height="${LH}" fill="transparent" style="cursor:pointer"/></svg>`;
+    const lh = el(`<div style="margin-top:22px"><h3>Errors by file</h3><p class="muted" style="margin:2px 0 10px;font-size:13px">Darker means more errors in that slice.${origin != null ? ` <span style="color:var(--mark-ink)">${esc(F[origin].name)}</span> showed new failures before any other file.` : ""}</p><div class="chart"></div></div>`);
+    lh.querySelector(".chart").innerHTML = s;
+    host.append(lh);
+    const svgL = lh.querySelector("svg"), lhit = svgL.querySelector(".lhit");
+    const at = (e) => {
+      const r = svgL.getBoundingClientRect();
+      const px = (e.clientX - r.left) * (W / r.width), py = (e.clientY - r.top) * (LH / r.height);
+      return [Math.min(nB - 1, Math.max(0, Math.floor((px - padL) / bw))), Math.min(F.length - 1, Math.max(0, Math.floor(py / laneH)))];
+    };
+    lhit.addEventListener("pointermove", (e) => {
+      const [bi, fi] = at(e);
+      showTip(`<div class="tt">${esc(F[fi].name)}</div><div class="row"><span>${fmtTime(t0 + bi * bucket)}</span><b>${n(tl.byFile[fi][bi])} errors</b></div><div class="row muted" style="margin-top:4px">Click to read these lines</div>`, e.clientX, e.clientY);
+    });
+    lhit.addEventListener("pointerleave", hideTip);
+    lhit.addEventListener("click", (e) => {
+      const [bi, fi] = at(e);
+      hideTip();
+      openExplorer({ files: new Set([fi]), range: [t0 + bi * bucket, t0 + (bi + 1) * bucket] });
+    });
+  }
+}
+function niceTicks(max) {
+  const raw = max / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || mag * 10;
+  const out = [];
+  for (let v = 0; v <= max + step * 0.999; v += step) out.push(Math.round(v * 1000) / 1000);
+  if (out[out.length - 1] < max) out.push(out[out.length - 1] + step);
+  return out;
+}
+function compact(v) { return v >= 1e6 ? (v / 1e6).toFixed(1).replace(/\.0$/, "") + "M" : v >= 1e3 ? (v / 1e3).toFixed(1).replace(/\.0$/, "") + "k" : String(v); }
+
+/* ---------- view: timeline ---------- */
+renderers.timeline = () => {
+  const v = el(`<div class="view"></div>`);
+  main.append(v);
+  const tl = D.timeline;
+  const inc = D.incident;
+  v.innerHTML = `<div class="view-head"><div><h1>Timeline</h1>
+    <p class="lede">Every event, in ${tl.bucket ? fmtDur(tl.bucket) : "—"} slices. Drag across the chart to read the lines from that stretch of time.</p></div></div>
+    ${inc ? `<div class="facts" style="margin-bottom:18px"><span>Incident <b>${fmtTime(inc.start)} – ${fmtTime(inc.end)}</b></span><span>Length <b>${fmtDur(inc.end - inc.start)}</b></span>${inc.errors ? `<span>Errors in it <b>${n(inc.errors)}</b></span>` : ""}${inc.firstFailure ? `<span>First new failure <b>${fmtTime(inc.firstFailure)}</b></span>` : ""}</div>` : ""}
+    <div class="toolbar"><button class="chip" id="tinfo" aria-pressed="true">Show info and debug</button></div>
+    <div id="bigChart"></div>
+    ${tl.bursts.length ? `<section class="section"><h2>Error spikes</h2><table class="grid"><thead><tr><th>From</th><th>To</th><th class="r">Errors</th><th class="r">Busiest slice</th></tr></thead>
+      <tbody>${tl.bursts.map(b => `<tr data-a="${b.start}" data-b="${b.end}"><td class="num">${fmtTime(b.start)}</td><td class="num">${fmtTime(b.end)}</td><td class="r num">${n(b.errors)}</td><td class="r num">${n(b.peak)}</td></tr>`).join("")}</tbody></table></section>` : ""}`;
+  let showInfo = true;
+  const draw = () => timelineChart($("#bigChart", v), { height: 280, problemsOnly: !showInfo });
+  const toggle = $("#tinfo", v);
+  toggle.addEventListener("click", () => { showInfo = !showInfo; toggle.setAttribute("aria-pressed", showInfo); draw(); });
+  chartRenderers.push(draw); draw();
+  v.querySelectorAll("tr[data-a]").forEach(tr => tr.addEventListener("click", () => openExplorer({ range: [+tr.dataset.a, +tr.dataset.b], levels: new Set([3, 4, 5]) })));
+};
+
+/* ---------- view: causes ---------- */
+renderers.causes = (opts) => {
+  const v = el(`<div class="view"></div>`);
+  main.append(v);
+  v.innerHTML = `<div class="view-head"><div><h1>All candidate causes</h1>
+    <p class="lede">Every warning and error, grouped by what probably caused it and ranked. Open one to see why it ranks where it does.</p></div></div>
+    ${D.causes.length ? `<div id="causeList"></div>` : `<div class="empty"><h2>Nothing to rank</h2><p>No warnings or errors were found.</p></div>`}
+    <section class="section"><h2>Known failure signatures found</h2><p class="lede" style="margin:0 0 14px">Log text that matched the built-in library of common failures, or your own rules file. Open one to read the matching lines.</p><div id="sigs"></div></section>`;
+  const list = $("#causeList", v);
+  if (list) {
+    D.causes.forEach(c => {
+      const item = el(`<div class="cause anim ${c.rank === 1 ? "top" : ""}"></div>`);
+      item.innerHTML = `<button aria-expanded="false"><span class="rank">#${c.rank}</span>
+        <div style="min-width:0"><div class="ct">${esc(c.title)}</div><div class="cs">${esc(c.category)} · ${n(c.count)} events · ${c.files.map(fileName).map(esc).join(", ")} · from ${fmtTime(c.first)}</div></div>
+        <span class="bar"><i style="width:${Math.max(2, c.likelihood)}%"></i></span><span class="pct">${c.likelihood < 1 ? "<1" : Math.round(c.likelihood)}%</span>
+        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+        <div class="body"><p class="lede" style="margin:0">${esc(c.summary)}</p>${evidenceHtml(c)}
+          <div class="cols"><section><h3 style="margin-bottom:12px">Signals</h3>${causeFactorsHtml(c)}</section><section><h3 style="margin-bottom:12px">What followed</h3>${chainHtml(c)}</section></div>
+          <h3 style="margin:20px 0 8px">What to try</h3><ul class="fixes">${c.fixes.map(f => `<li>${esc(f)}</li>`).join("")}</ul>
+          <h3 style="margin:20px 0 8px">Patterns in this group</h3>
+          <div>${c.templates.map(id => { const t = T.get(id); return t ? `<div style="padding:4px 0"><button class="linkish pt" data-tpl="${id}">${patternHtml(t.text)}</button> <span class="muted" style="font-size:12px">${n(t.count)}×</span></div>` : ""; }).join("")}</div>
+        </div>`;
+      const btn = item.querySelector("button");
+      btn.addEventListener("click", () => { const open = item.toggleAttribute("open"); btn.setAttribute("aria-expanded", open); });
+      if (opts.open === c.rank) { item.setAttribute("open", ""); btn.setAttribute("aria-expanded", "true"); setTimeout(() => item.scrollIntoView({ block: "start", behavior: "smooth" }), 30); }
+      list.append(item);
+    });
+    bindTemplateLinks(list);
+  }
+  const sigs = $("#sigs", v);
+  if (!D.signatures.length) { sigs.innerHTML = `<p class="muted">No known signatures matched.</p>`; return; }
+  sigs.innerHTML = `<table class="grid"><thead><tr><th>Signature</th><th class="hide-sm">Category</th><th class="hide-sm">Usually</th><th class="r">Events</th><th class="r hide-sm">First seen</th></tr></thead><tbody>
+    ${D.signatures.map(s => `<tr data-sig="${esc(s.id)}"><td><b style="font-weight:600">${esc(s.title)}</b>${s.custom ? ` <span class="tag mk">yours</span>` : ""}<div class="muted" style="font-size:12.5px">${esc(s.explanation)}</div></td>
+      <td class="hide-sm">${esc(s.category)}</td><td class="hide-sm">${s.rootness >= 0.75 ? "a cause" : s.rootness >= 0.5 ? "either" : "a symptom"}</td>
+      <td class="r num">${n(s.count)}</td><td class="r num hide-sm">${fmtTime(s.first)}</td></tr>`).join("")}</tbody></table>`;
+  sigs.querySelectorAll("tr[data-sig]").forEach(tr => tr.addEventListener("click", () => {
+    const s = SIG.get(tr.dataset.sig);
+    openExplorer({ q: s.patterns.map(p => p.replace(/\(\?[a-z]+\)/g, "")).join("|"), regex: true });
+  }));
+};
+
+/* ---------- view: patterns ---------- */
+renderers.patterns = () => {
+  const v = el(`<div class="view"></div>`);
+  main.append(v);
+  const matches = D.matches || [];
+  v.innerHTML = `<div class="view-head"><div><h1>Patterns</h1>
+    <p class="lede">Messages that differ only in numbers, IDs, addresses or paths are grouped into one pattern. ${n(D.meta.records)} events became ${n(D.templates.length)} patterns.</p></div></div>
+    ${matches.length ? `<section style="margin-bottom:24px"><h2 style="margin-bottom:10px">Your patterns</h2><table class="grid"><thead><tr><th>Pattern</th><th class="r">Matching events</th><th class="hide-sm">In files</th></tr></thead><tbody>
+      ${matches.map((m, i) => `<tr data-m="${i}"><td class="pt">/${esc(m.pattern)}/</td><td class="r num">${n(m.count)}</td><td class="hide-sm">${Object.entries(m.byFile).map(([f, c]) => `${esc(fileName(+f))} <span class="muted">${n(c)}</span>`).join(", ") || "—"}</td></tr>`).join("")}
+    </tbody></table></section>` : ""}
+    <div class="toolbar"><label class="field grow"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2"/></svg>
+      <input id="pq" placeholder="Filter patterns" aria-label="Filter patterns"></label>
+      <div class="chips" id="plv"></div></div>
+    <table class="grid" id="ptable"><thead><tr>
+      <th><button data-sort="level" data-dir="↓">Level</button></th><th>Pattern</th><th class="r"><button data-sort="count">Events</button></th>
+      <th class="hide-sm">Over time</th><th class="r hide-sm"><button data-sort="first">First seen</button></th><th class="hide-sm">Files</th>${D.compare ? `<th class="r hide-sm"><button data-sort="baseline">Healthy run</button></th>` : ""}</tr></thead><tbody></tbody></table>`;
+  v.querySelectorAll("tr[data-m]").forEach(tr => tr.addEventListener("click", () => openExplorer({ q: matches[+tr.dataset.m].pattern, regex: true })));
+  const state = { q: "", sort: "level", dir: -1, levels: new Set(["FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"]) };
+  const counts = {};
+  D.templates.forEach(t => counts[t.level] = (counts[t.level] || 0) + 1);
+  const plv = $("#plv", v);
+  ["FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"].filter(l => counts[l]).forEach(l => {
+    const b = el(`<button class="chip" aria-pressed="true"><span class="lv ${l}">${l[0] + l.slice(1).toLowerCase()}</span><span class="n">${counts[l]}</span></button>`);
+    b.addEventListener("click", () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", on); on ? state.levels.add(l) : state.levels.delete(l); draw(); });
+    plv.append(b);
+  });
+  const tbody = $("#ptable tbody", v);
+  const sparkColor = (lv) => lv === "ERROR" || lv === "FATAL" ? cssVar("--critical") : lv === "WARN" ? cssVar("--warning") : cssVar("--neutral");
+  const rank = { TRACE: 0, DEBUG: 1, INFO: 2, WARN: 3, ERROR: 4, FATAL: 5 };
+  function draw() {
+    const q = state.q.toLowerCase();
+    let rows = D.templates.filter(t => state.levels.has(t.level) && (!q || t.text.toLowerCase().includes(q) || (t.ruleTitle || "").toLowerCase().includes(q)));
+    const key = state.sort;
+    rows.sort((a, b) => {
+      const va = key === "level" ? rank[a.level] : a[key] ?? -1, vb = key === "level" ? rank[b.level] : b[key] ?? -1;
+      return (va - vb) * state.dir || b.count - a.count;
+    });
+    const top = rows.slice(0, 600);
+    tbody.innerHTML = top.map(t => {
+      const max = Math.max(1, ...t.spark);
+      const w = 120, h = 22, bw = w / t.spark.length;
+      const bars = t.spark.map((c, i) => c ? `<rect x="${(i * bw).toFixed(2)}" y="${(h - Math.max(1.5, c / max * h)).toFixed(2)}" width="${Math.max(0.8, bw - 0.4).toFixed(2)}" height="${Math.max(1.5, c / max * h).toFixed(2)}" fill="${sparkColor(t.level)}"/>` : "").join("");
+      let status = "";
+      if (D.compare && t.baseline === 0) status = ` <span class="tag new">new</span>`;
+      return `<tr data-t="${t.id}"><td><span class="lv ${t.level}">${t.level[0] + t.level.slice(1).toLowerCase()}</span></td>
+        <td><span class="pt">${patternHtml(t.text)}</span>${t.ruleTitle && t.rule !== "app_exception" ? ` <span class="tag">${esc(t.ruleTitle)}</span>` : ""}${status}</td>
+        <td class="r num">${n(t.count)}</td>
+        <td class="hide-sm"><svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><line x1="0" x2="${w}" y1="${h - 0.5}" y2="${h - 0.5}" stroke="${cssVar("--line")}"/>${bars}</svg></td>
+        <td class="r num hide-sm">${fmtTime(t.first)}</td>
+        <td class="hide-sm" style="font-size:12.5px;color:var(--ink-2);white-space:nowrap">${t.files.map(fileName).map(esc).join("<br>")}</td>
+        ${D.compare ? `<td class="r num hide-sm">${t.baseline == null ? "—" : n(t.baseline)}</td>` : ""}</tr>`;
+    }).join("") + (rows.length > 600 ? `<tr><td colspan="7" class="muted">Showing 600 of ${n(rows.length)}. Narrow the filter to see the rest.</td></tr>` : "")
+      + (rows.length ? "" : `<tr><td colspan="7" class="muted">No patterns match this filter.</td></tr>`);
+  }
+  $("#pq", v).addEventListener("input", (e) => { state.q = e.target.value; draw(); });
+  v.querySelectorAll("th button[data-sort]").forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.sort;
+    state.dir = state.sort === k ? -state.dir : (k === "first" ? 1 : -1);
+    state.sort = k;
+    v.querySelectorAll("th button[data-sort]").forEach(x => x.removeAttribute("data-dir"));
+    b.setAttribute("data-dir", state.dir < 0 ? "↓" : "↑");
+    draw();
+  }));
+  tbody.addEventListener("click", (e) => { const tr = e.target.closest("tr[data-t]"); if (tr) openExplorer({ template: +tr.dataset.t }); });
+  draw();
+  chartRenderers.push(draw);
+};
+
+/* ---------- view: linked requests ---------- */
+renderers.requests = () => {
+  const v = el(`<div class="view full"></div>`);
+  main.append(v);
+  if (!D.traces.length) {
+    v.innerHTML = `<div class="view-head"><h1>Linked requests</h1></div><div class="empty"><h2>No shared IDs found</h2>
+      <p>Lines are linked when they carry the same request, trace, correlation or order ID (for example <code>traceId=4bf92f…</code>), in one file or across several.</p></div>`;
+    return;
+  }
+  const ts = D.meta.traceStats;
+  const shown = D.traces.length < ts.total ? ` Showing ${n(D.traces.length)}: failing ones first, then healthy ones to compare with.` : "";
+  v.innerHTML = `<div class="view-head"><div><h1>Linked requests</h1>
+    <p class="lede">Lines that share a request, trace or order ID, matched across files. Found ${n(ts.total)} IDs: ${n(ts.multiFile)} span more than one file and ${n(ts.withErrors)} include an error.${shown}</p></div></div>
+    <div class="toolbar"><label class="field grow"><input id="tq" placeholder="Find an ID" aria-label="Find an ID"></label>
+      <button class="chip" id="tfail" aria-pressed="false">With errors only</button><button class="chip" id="tmulti" aria-pressed="false">Across files only</button></div>
+    <div class="split"><div class="list" id="tlist" role="listbox" aria-label="Linked requests"></div><div class="pane" id="tpane"></div></div>`;
+  const list = $("#tlist", v), pane = $("#tpane", v);
+  const st = { q: "", fail: false, multi: false, sel: null };
+  function drawList() {
+    const q = st.q.toLowerCase();
+    const rows = D.traces.filter(t => (!q || t.id.toLowerCase().includes(q)) && (!st.fail || t.errors) && (!st.multi || t.files.length > 1));
+    list.innerHTML = rows.slice(0, 300).map(t => `<button role="option" aria-selected="${st.sel === t.id}" data-id="${esc(t.id)}">
+      <div class="id">${esc(t.id)}</div><div class="sub"><span>${n(t.count)} lines</span><span>${t.files.length} file${t.files.length === 1 ? "" : "s"}</span>
+      ${t.errors ? `<span class="e">${n(t.errors)} error${t.errors === 1 ? "" : "s"}</span>` : ""}<span>${fmtDur(t.duration)}</span><span>${fmtTime(t.first)}</span></div></button>`).join("")
+      || `<p class="muted" style="padding:14px">No IDs match.</p>`;
+    if (!st.sel && rows[0]) select(rows[0].id);
+  }
+  function select(id) {
+    st.sel = id;
+    list.querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", b.dataset.id === id));
+    const t = D.traces.find(x => x.id === id);
+    if (!t) return;
+    const recs = t.records.filter(i => rowByIdx.has(i)).map(i => R[rowByIdx.get(i)]);
+    const a = t.first ?? 0, span = Math.max(t.duration, 0.001);
+    const fileIds = t.files;
+    const W = 640, laneH = 26, H = fileIds.length * laneH + 22, padL = 150;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Where this request went, by file">`;
+    fileIds.forEach((f, k) => {
+      const y = k * laneH + 13;
+      svg += `<text x="0" y="${y + 4}">${esc(fileName(f)).slice(0, 22)}</text><line x1="${padL}" x2="${W - 8}" y1="${y}" y2="${y}" stroke="${cssVar("--line")}"/>`;
+    });
+    recs.forEach(r => {
+      const k = fileIds.indexOf(r[1]);
+      const xPos = padL + ((r[2] - a) / span) * (W - padL - 16);
+      const c = r[3] >= 4 ? cssVar("--critical") : r[3] === 3 ? cssVar("--warning") : cssVar("--info-ink");
+      svg += `<circle cx="${xPos.toFixed(1)}" cy="${k * laneH + 13}" r="5" fill="${c}" stroke="${cssVar("--surface")}" stroke-width="2"><title>${esc(fmtTime(r[2], true) + " " + r[6].slice(0, 120))}</title></circle>`;
+    });
+    svg += `<text x="${padL}" y="${H - 2}">${fmtTime(a, true)}</text><text x="${W - 8}" y="${H - 2}" text-anchor="end">+${fmtDur(span)}</text></svg>`;
+    pane.innerHTML = `<div class="swim"><div class="section-head" style="margin-bottom:8px"><h3 class="mono" style="word-break:break-all">${esc(t.id)}</h3>
+      <button class="btn" id="tex">Show in Explorer</button></div><div class="chart">${svg}</div></div>
+      <div class="events">${recs.map(r => `<div class="ev" data-rec="${r[0]}"><span class="num muted">${fmtTime(r[2], true)}</span><span class="f">${esc(fileName(r[1]))}</span>
+        <span class="lv ${levelName(r[3])}">${levelName(r[3])[0] + levelName(r[3]).slice(1).toLowerCase()}</span><span class="m">${esc(r[6])}</span></div>`).join("")}</div>`;
+    $("#tex", pane).addEventListener("click", () => openExplorer({ id: t.id }));
+    pane.querySelectorAll(".ev").forEach(e => e.addEventListener("click", () => openExplorer({ id: t.id, select: +e.dataset.rec })));
+  }
+  list.addEventListener("click", (e) => { const b = e.target.closest("button[data-id]"); if (b) select(b.dataset.id); });
+  $("#tq", v).addEventListener("input", (e) => { st.q = e.target.value; drawList(); });
+  for (const [idName, key] of [["#tfail", "fail"], ["#tmulti", "multi"]]) {
+    const b = $(idName, v);
+    b.addEventListener("click", () => { st[key] = !st[key]; b.setAttribute("aria-pressed", st[key]); drawList(); });
+  }
+  drawList();
+};
+
+/* ---------- view: compare ---------- */
+renderers.compare = () => {
+  const v = el(`<div class="view"></div>`);
+  main.append(v);
+  const C = D.compare;
+  if (!C) {
+    v.innerHTML = `<div class="view-head"><h1>Compare runs</h1></div><div class="empty"><h2>No healthy run to compare with</h2>
+      <p>Give the logs from a time when things worked, and the report shows which patterns are new, which disappeared and which changed in frequency.</p>
+      <p><code>python -m loganalyser analyse failing/ --baseline healthy/</code></p></div>`;
+    return;
+  }
+  v.innerHTML = `<div class="view-head"><div><h1>Compare runs</h1>
+    <p class="lede">This run against a healthy one (${C.files.map(f => esc(f.name)).join(", ")}, ${n(C.records)} events). Rates are per 10,000 events, so runs of different length compare fairly.</p></div></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="new">New here <span class="muted">${n(C.new.length)}</span></button>
+      <button role="tab" aria-selected="false" data-tab="changed">Changed frequency <span class="muted">${n(C.changed.length)}</span></button>
+      <button role="tab" aria-selected="false" data-tab="gone">Missing here <span class="muted">${n(C.gone.length)}</span></button>
+    </div><div id="ctab"></div>`;
+  const host = $("#ctab", v);
+  function draw(tab) {
+    v.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === tab));
+    const rows = C[tab];
+    if (!rows.length) { host.innerHTML = `<p class="muted">${tab === "new" ? "Nothing new: every pattern here also appears in the healthy run." : tab === "gone" ? "Nothing is missing: every healthy pattern also appears here." : "No pattern changed frequency by 2x or more."}</p>`; return; }
+    host.innerHTML = `<p class="muted" style="font-size:13px;margin:0 0 10px">${tab === "gone" ? "Patterns from the healthy run that never appear here. Missing success messages can be as telling as new errors." : tab === "new" ? "Patterns that never appear in the healthy run." : "Patterns that appear in both runs at clearly different rates."}</p>
+      <table class="grid"><thead><tr><th>Level</th><th>Pattern</th><th class="r">Here</th><th class="r">Healthy</th><th class="r hide-sm">Rate here</th><th class="r hide-sm">Rate healthy</th>${tab === "changed" ? `<th class="r">Change</th>` : ""}</tr></thead>
+      <tbody>${rows.map(r => `<tr ${r.live ? `data-t="${r.template}"` : ""}><td><span class="lv ${r.level}">${r.level[0] + r.level.slice(1).toLowerCase()}</span></td><td class="pt">${patternHtml(r.text)}</td>
+        <td class="r num">${n(r.live)}</td><td class="r num">${n(r.baseline)}</td><td class="r num hide-sm">${r.liveRate}</td><td class="r num hide-sm">${r.baseRate}</td>
+        ${tab === "changed" ? `<td class="r num"><b style="color:${r.ratio >= 1 ? "var(--critical-ink)" : "var(--good-ink)"}">${r.ratio >= 1 ? "▲ " + r.ratio.toFixed(1) + "x" : "▼ " + (1 / r.ratio).toFixed(1) + "x less"}</b></td>` : ""}</tr>`).join("")}</tbody></table>`;
+  }
+  v.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => draw(b.dataset.tab)));
+  host.addEventListener("click", (e) => { const tr = e.target.closest("tr[data-t]"); if (tr) openExplorer({ template: +tr.dataset.t }); });
+  draw("new");
+};
+
+/* ---------- view: files ---------- */
+renderers.files = () => {
+  const v = el(`<div class="view"></div>`);
+  main.append(v);
+  v.innerHTML = `<div class="view-head"><div><h1>Files read</h1><p class="lede">Formats were detected automatically. Lines without a timestamp, such as stack traces, are kept with the event they belong to.</p></div></div>
+    ${D.meta.truncated ? `<p class="note">This report embeds ${n(D.meta.embedded)} of ${n(D.meta.records)} events to stay fast in the browser: every warning and error with the lines around it, plus an even sample of the rest. All events were used for the analysis.</p>` : ""}
+    <table class="grid files-table"><thead><tr><th>File</th><th class="hide-sm">Format</th><th class="r">Lines</th><th class="r">Events</th><th class="r">Errors</th><th class="r">Warnings</th><th class="r hide-sm">From</th><th class="r hide-sm">To</th></tr></thead>
+    <tbody>${F.map((f, i) => `<tr data-f="${i}"><td>${esc(f.name)}<div class="muted mono" style="font-size:11.5px;word-break:break-all">${esc(f.path)}</div></td><td class="hide-sm">${{ json: "JSON lines", access: "Web access log", syslog: "Syslog", text: "Text" }[f.format] || esc(f.format)}${f.timestamped < 0.5 ? ` <span class="tag">few timestamps</span>` : ""}</td>
+      <td class="r num">${n(f.lines)}</td><td class="r num">${n(f.records)}</td><td class="r num">${n(f.levels.ERROR + f.levels.FATAL)}</td><td class="r num">${n(f.levels.WARN)}</td>
+      <td class="r num hide-sm">${fmtTime(f.first)}</td><td class="r num hide-sm">${fmtTime(f.last)}</td></tr>`).join("")}</tbody></table>
+    ${D.meta.baseline.length ? `<p class="muted" style="margin-top:18px">Healthy run for comparison: ${D.meta.baseline.map(esc).join(", ")}</p>` : ""}`;
+  v.querySelectorAll("tr[data-f]").forEach(tr => tr.addEventListener("click", () => openExplorer({ files: new Set([+tr.dataset.f]) })));
+};
+
+/* ---------- view: explorer ---------- */
+renderers.explorer = () => {
+  const v = el(`<div class="view full"></div>`);
+  main.append(v);
+  const lvCounts = [0, 0, 0, 0, 0, 0];
+  R.forEach(r => lvCounts[r[3]]++);
+  v.innerHTML = `<div class="view-head" style="margin-bottom:14px"><h1>Explorer</h1><span class="muted" style="font-size:13px">Press <kbd class="mono">/</kbd> to search, <kbd class="mono">↑</kbd> <kbd class="mono">↓</kbd> to move, <kbd class="mono">Esc</kbd> to close details</span></div>
+    <div class="toolbar">
+      <label class="field grow"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2"/></svg>
+        <input id="xq" placeholder="Search text, or a regular expression" aria-label="Search log lines" autocomplete="off" spellcheck="false">
+        <button class="toggle" id="xre" aria-pressed="false" title="Regular expression">.*</button>
+        <button class="toggle" id="xcs" aria-pressed="false" title="Match case">Aa</button></label>
+      <select class="field" id="xfile" aria-label="File"><option value="">All files</option>${F.map((f, i) => `<option value="${i}">${esc(f.name)}</option>`).join("")}</select>
+      <button class="btn ghost" id="xdl" title="Download the lines shown as a .log file">Download lines</button>
+    </div>
+    <div class="toolbar" style="margin-top:-4px"><div class="chips" id="xlv"></div><div class="chips" id="xfilters"></div></div>
+    <div class="explorer"><div class="ex-body" id="xbody"><div class="vlist" id="xlist" tabindex="0" aria-label="Log lines"><div class="spacer" id="xspacer"></div></div></div>
+    <div class="ex-status"><span id="xcount"></span><span id="xnote"></span></div></div>`;
+  const q = $("#xq", v), re = $("#xre", v), cs = $("#xcs", v), fileSel = $("#xfile", v), list = $("#xlist", v), spacer = $("#xspacer", v), body = $("#xbody", v);
+  q.value = ex.q; re.setAttribute("aria-pressed", ex.regex); cs.setAttribute("aria-pressed", ex.cs);
+  if (ex.files.size === 1) fileSel.value = [...ex.files][0];
+  const lvBox = $("#xlv", v);
+  [5, 4, 3, 2, 1, 0].filter(i => lvCounts[i]).forEach(i => {
+    const name = LV[i];
+    const b = el(`<button class="chip" aria-pressed="${ex.levels.has(i)}"><span class="lv ${name}">${name[0] + name.slice(1).toLowerCase()}</span><span class="n">${n(lvCounts[i])}</span></button>`);
+    b.addEventListener("click", (e) => {
+      if (e.shiftKey || e.altKey) { ex.levels = new Set([i]); lvBox.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", "false")); b.setAttribute("aria-pressed", "true"); }
+      else { const on = !ex.levels.has(i); on ? ex.levels.add(i) : ex.levels.delete(i); b.setAttribute("aria-pressed", on); }
+      refilter();
+    });
+    lvBox.append(b);
+  });
+  const ROW = 26;
+  let rows = [], matcher = null, qError = "";
+  function buildMatcher() {
+    qError = "";
+    if (!ex.q) return null;
+    try {
+      const src = ex.regex ? ex.q : ex.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(src, ex.cs ? "g" : "gi");
+    } catch (err) { qError = "That regular expression is not valid: " + err.message; return undefined; }
+  }
+  function drawFilters() {
+    const box = $("#xfilters", v);
+    const parts = [];
+    if (ex.template != null) { const t = T.get(ex.template); parts.push(["template", `Pattern: <b>${esc(t ? t.text : ex.template)}</b>`]); }
+    if (ex.id) parts.push(["id", `ID: <b class="mono">${esc(ex.id)}</b>`]);
+    if (ex.range) parts.push(["range", `Time: <b>${fmtTime(ex.range[0])} – ${fmtTime(ex.range[1])}</b>`]);
+    box.innerHTML = parts.map(([k, h]) => `<button class="chip filter" data-clear="${k}" title="Remove this filter">${h} <span aria-hidden="true">×</span></button>`).join("");
+    box.querySelectorAll("[data-clear]").forEach(b => b.addEventListener("click", () => { ex[b.dataset.clear] = null; refilter(); }));
+  }
+  function refilter(keepScroll) {
+    matcher = buildMatcher();
+    const fileSet = ex.files;
+    const tpl = ex.template, id = ex.id, range = ex.range;
+    rows = [];
+    if (matcher !== undefined) {
+      for (let i = 0; i < R.length; i++) {
+        const r = R[i];
+        if (!ex.levels.has(r[3]) || !fileSet.has(r[1])) continue;
+        if (tpl != null && r[4] !== tpl) continue;
+        if (range && (r[2] == null || r[2] < range[0] || r[2] >= range[1])) continue;
+        if (id && !(r[9] && r[9].includes(id))) continue;
+        if (matcher) { matcher.lastIndex = 0; if (!matcher.test(r[6]) && !(r[7] && (matcher.lastIndex = 0, matcher.test(r[7])))) continue; }
+        rows.push(i);
+      }
+    }
+    ex.rows = rows;
+    spacer.style.height = rows.length * ROW + "px";
+    $("#xcount", v).textContent = qError || `${n(rows.length)} of ${n(R.length)} lines`;
+    $("#xnote", v).textContent = D.meta.truncated ? `Report embeds ${n(D.meta.embedded)} of ${n(D.meta.records)} events` : "";
+    drawFilters();
+    if (!keepScroll) list.scrollTop = 0;
+    paint();
+  }
+  function paint() {
+    const top = list.scrollTop, h = list.clientHeight || 600;
+    const start = Math.max(0, Math.floor(top / ROW) - 10), end = Math.min(rows.length, Math.ceil((top + h) / ROW) + 10);
+    let html = "";
+    for (let k = start; k < end; k++) {
+      const r = R[rows[k]];
+      const name = levelName(r[3]);
+      let msg;
+      if (matcher) {
+        const ranges = []; matcher.lastIndex = 0; let m;
+        while ((m = matcher.exec(r[6])) && ranges.length < 20) { if (!m[0]) { matcher.lastIndex++; continue; } ranges.push([m.index, m.index + m[0].length]); }
+        msg = markRanges(r[6].slice(0, 600), ranges.filter(x => x[0] < 600), "q");
+      } else msg = esc(r[6].slice(0, 600));
+      const lines = r[7] ? r[7].split("\n").length : 0;
+      html += `<div class="xrow l-${name}${ex.selected === r[0] ? " sel" : ""}" style="top:${k * ROW}px" data-k="${k}" role="button" tabindex="-1">
+        <span class="stripe"></span><span class="ts num">${fmtTime(r[2], true).slice(-12)}</span><span class="lv ${name}">${name[0] + name.slice(1).toLowerCase()}</span>
+        <span class="file" title="${esc(fileName(r[1]))}">${esc(fileName(r[1]))}</span><span class="msg">${msg}${lines ? `<span class="more">+${lines} line${lines === 1 ? "" : "s"}</span>` : ""}</span></div>`;
+    }
+    spacer.innerHTML = html;
+  }
+  list.addEventListener("scroll", () => requestAnimationFrame(paint));
+  list.addEventListener("click", (e) => { const row = e.target.closest(".xrow"); if (row) selectRow(+row.dataset.k); });
+  function selectRow(k) {
+    if (k < 0 || k >= rows.length) return;
+    const r = R[rows[k]];
+    ex.selected = r[0];
+    const top = k * ROW;
+    if (top < list.scrollTop) list.scrollTop = top;
+    else if (top + ROW > list.scrollTop + list.clientHeight) list.scrollTop = top + ROW - list.clientHeight;
+    paint();
+    showDetail(rows[k]);
+  }
+  function showDetail(ri) {
+    const r = R[ri];
+    body.classList.add("with-detail");
+    let d = $(".detail", body);
+    if (!d) { d = el(`<aside class="detail" aria-label="Line details"></aside>`); body.append(d); }
+    const t = T.get(r[4]);
+    // Context: neighbouring lines from the same file.
+    const sameFile = [];
+    for (let i = Math.max(0, ri - 400); i < Math.min(R.length, ri + 400); i++) if (R[i][1] === r[1]) sameFile.push(i);
+    sameFile.sort((a, b) => R[a][5] - R[b][5]);
+    const pos = sameFile.indexOf(ri);
+    const ctx = sameFile.slice(Math.max(0, pos - 8), pos + 9);
+    const fields = [["File", fileName(r[1])], ["Line", n(r[5])], ["Time", fmtDate(r[2]) + " " + fmtTime(r[2], true)], ["Level", levelName(r[3]) + (r[10] ? " (guessed from the text)" : "")]];
+    if (r[8]) fields.push(["Source", r[8]]);
+    const ruleIds = t && t.rule ? [t.rule] : [];
+    d.innerHTML = `<div class="dh"><span class="lv ${levelName(r[3])}">${levelName(r[3])}</span><button class="btn ghost" id="xclose" aria-label="Close details">Close</button></div>
+      <pre>${highlightRules(recText(r), ruleIds)}</pre>
+      ${r[11] ? `<div><h3 style="margin-bottom:6px">Original line</h3><pre>${esc(r[11])}</pre></div>` : ""}
+      <dl class="kv">${fields.map(([k, val]) => `<dt>${k}</dt><dd>${esc(val)}</dd>`).join("")}</dl>
+      ${t ? `<div><h3 style="margin-bottom:6px">Pattern</h3><button class="linkish pt" id="xtpl">${patternHtml(t.text)}</button><div class="muted" style="font-size:12.5px;margin-top:4px">${n(t.count)} events like this${t.ruleTitle && t.rule !== "app_exception" ? " · matches " + esc(t.ruleTitle) : ""}</div></div>` : ""}
+      ${r[9] && r[9].length ? `<div><h3 style="margin-bottom:6px">Linked by ID</h3><div class="chips">${r[9].map(id => `<button class="chip" data-id="${esc(id)}"><span class="mono">${esc(id)}</span></button>`).join("")}</div>
+        <div class="muted" style="font-size:12.5px;margin-top:6px">Show every line, in any file, that carries this ID.</div></div>` : ""}
+      <div><h3 style="margin-bottom:6px">Around this line in ${esc(fileName(r[1]))}</h3><div class="ctx">${ctx.map(i => { const c = R[i]; return `<div class="l-${levelName(c[3])}${i === ri ? " here" : ""}" data-ri="${i}"><span class="n">${c[5]}</span><span>${esc(c[6])}</span></div>`; }).join("")}</div></div>`;
+    $("#xclose", d).addEventListener("click", closeDetail);
+    const tb = $("#xtpl", d); if (tb) tb.addEventListener("click", () => { ex.template = r[4]; refilter(); });
+    d.querySelectorAll("[data-id]").forEach(b => b.addEventListener("click", () => { ex.id = b.dataset.id; ex.template = null; ex.range = null; refilter(); }));
+    d.querySelectorAll("[data-ri]").forEach(c => c.addEventListener("click", () => {
+      const i = +c.dataset.ri; const k = rows.indexOf(i);
+      if (k >= 0) selectRow(k); else { ex.selected = R[i][0]; showDetail(i); }
+    }));
+  }
+  function closeDetail() { body.classList.remove("with-detail"); const d = $(".detail", body); if (d) d.remove(); ex.selected = null; paint(); list.focus(); }
+  let qTimer;
+  q.addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(() => { ex.q = q.value; refilter(); }, 120); });
+  re.addEventListener("click", () => { ex.regex = !ex.regex; re.setAttribute("aria-pressed", ex.regex); refilter(); });
+  cs.addEventListener("click", () => { ex.cs = !ex.cs; cs.setAttribute("aria-pressed", ex.cs); refilter(); });
+  fileSel.addEventListener("change", () => { ex.files = fileSel.value === "" ? new Set(F.map((_, i) => i)) : new Set([+fileSel.value]); refilter(); });
+  $("#xdl", v).addEventListener("click", () => {
+    const text = rows.map(i => { const r = R[i]; return `${fmtDate(r[2])} ${fmtTime(r[2], true)} ${levelName(r[3])} [${fileName(r[1])}:${r[5]}] ${recText(r)}`; }).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text + "\n"], { type: "text/plain" }));
+    a.download = "filtered-lines.log"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  list.addEventListener("keydown", (e) => {
+    const k = rows.findIndex(i => R[i][0] === ex.selected);
+    if (e.key === "ArrowDown") { e.preventDefault(); selectRow(k < 0 ? 0 : k + 1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); selectRow(Math.max(0, k - 1)); }
+    else if (e.key === "Enter" && k < 0) selectRow(0);
+  });
+  refilter();
+  if (ex.selected != null) {
+    let k = rows.findIndex(i => R[i][0] === ex.selected);
+    if (k < 0 && rowByIdx.has(ex.selected)) {
+      // The line is hidden by the current filters: clear them so it can be shown in place.
+      Object.assign(ex, { template: null, id: null, range: null, q: "" }); q.value = "";
+      ex.levels = new Set([0, 1, 2, 3, 4, 5]); ex.files = new Set(F.map((_, i) => i));
+      lvBox.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", "true")); fileSel.value = "";
+      refilter(); k = rows.findIndex(i => R[i][0] === ex.selected);
+    }
+    if (k >= 0) { list.scrollTop = Math.max(0, k * ROW - list.clientHeight / 2); selectRow(k); }
+  }
+  chartRenderers.push(paint);
+};
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) {
+    if (currentView !== "explorer") { history.pushState(null, "", "#explorer"); go("explorer"); }
+    e.preventDefault(); const q = document.getElementById("xq"); if (q) q.focus();
+  } else if (e.key === "Escape") {
+    const c = document.getElementById("xclose"); if (c) c.click();
+  }
+});
+
+go(location.hash.slice(1) || "verdict");
+</script>
+</body>
+</html>

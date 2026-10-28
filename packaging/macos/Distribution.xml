@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Mac installer wizard (built by packaging/build_mac.sh with productbuild; @VERSION@ is filled in).
+     Steps: Welcome -> checks (macOS version, Apple silicon, disk space) -> Install -> Summary. -->
+<installer-gui-script minSpecVersion="2">
+    <title>LogAnalyser</title>
+    <organization>com.loganalyser</organization>
+    <!-- Installs into /Applications for everyone on the Mac; macOS asks for the person's password. -->
+    <domains enable_localSystem="true" enable_currentUserHome="false" enable_anywhere="false"/>
+    <!-- Both architectures listed so an Intel Mac runs the check below and gets a clear message,
+         and Apple silicon Macs are not asked to install Rosetta just to run the installer. -->
+    <options customize="never" require-scripts="false" rootVolumeOnly="true" hostArchitectures="arm64,x86_64"/>
+    <background file="background.tiff" mime-type="image/tiff" alignment="bottomleft" scaling="none"/>
+    <background-darkAqua file="background.tiff" mime-type="image/tiff" alignment="bottomleft" scaling="none"/>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <conclusion file="conclusion.html" mime-type="text/html"/>
+    <installation-check script="thisMacCanRunIt()"/>
+    <volume-check script="enoughSpace()"/>
+    <script><![CDATA[
+function thisMacCanRunIt() {
+    if (system.compareVersions(system.version.ProductVersion, '11.0') < 0) {
+        my.result.type = 'Fatal';
+        my.result.title = 'LogAnalyser needs macOS 11 Big Sur or later';
+        my.result.message = 'This Mac has macOS ' + system.version.ProductVersion + '. Update macOS (Apple menu > System Preferences > Software Update), then run this installer again.';
+        return false;
+    }
+    if (system.sysctl('hw.optional.arm64') != 1) {
+        my.result.type = 'Fatal';
+        my.result.title = 'LogAnalyser needs a Mac with Apple silicon';
+        my.result.message = 'This version runs on Macs with an M1, M2, M3 or M4 chip. This Mac has an Intel processor. Ask whoever gave you LogAnalyser for the Intel version.';
+        return false;
+    }
+    return true;
+}
+
+function enoughSpace() {
+    var neededMB = 300;
+    if (my.target.availableKilobytes < neededMB * 1024) {
+        my.result.type = 'Fatal';
+        my.result.title = 'Not enough disk space';
+        my.result.message = 'LogAnalyser needs about ' + neededMB + ' MB, but this disk has only ' + Math.floor(my.target.availableKilobytes / 1024) + ' MB free. Free up some space, then try again.';
+        return false;
+    }
+    return true;
+}
+    ]]></script>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.loganalyser.desktop"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.loganalyser.desktop" visible="false">
+        <pkg-ref id="com.loganalyser.desktop"/>
+    </choice>
+    <pkg-ref id="com.loganalyser.desktop" version="@VERSION@" onConclusion="none">LogAnalyser-component.pkg</pkg-ref>
+</installer-gui-script>
