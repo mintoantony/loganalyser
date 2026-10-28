@@ -156,11 +156,7 @@ Use the full path in the settings below. These examples use the source install i
 }
 ```
 
-**Claude Code**:
-
-```bash
-claude mcp add --scope user loganalyser -- "D:\VanguardProjects\Agents\LogAnalyser\.venv\Scripts\loganalyser-mcp.exe"
-```
+**Claude Code**: see [Use it in all your Claude Code projects](#use-it-in-all-your-claude-code-projects) below.
 
 **GitHub Copilot in VS Code**: run *MCP: Add Server* from the command palette, or put this in
 `.vscode/mcp.json` (one project) or your user `mcp.json` (all projects), then use Copilot Chat in
@@ -202,9 +198,60 @@ It answers with:
 The instructions live in `.claude/agents/log-investigator.md`. After changing them, run
 `python scripts/sync_agents.py` to update the Copilot and Codex copies (a test fails if you forget).
 The server path in the three config files points to this folder's `.venv`; on another machine, change
-it to that machine's `loganalyser-mcp` or `LogAnalyser.exe --mcp`. To use the agent in every project,
-copy it to the tool's user folder (`~/.claude/agents/`, `~/.copilot/agents/`, `~/.codex/agents/`) and
-add the server at user level (`claude mcp add --scope user`, `copilot mcp`, `codex mcp add`).
+it to that machine's `loganalyser-mcp` or `LogAnalyser.exe --mcp`. To use the agent in every project
+with Copilot or Codex, copy it to the tool's user folder (`~/.copilot/agents/`, `~/.codex/agents/`) and
+add the server at user level (`copilot mcp`, `codex mcp add`). For Claude Code, follow the steps below.
+
+### Use it in all your Claude Code projects
+
+Do this once per computer, after installing the app. Afterwards, every Claude Code project can analyse
+logs, with no files to add to each project.
+
+**On Windows**, open PowerShell and run these two commands:
+
+```powershell
+# 1. Connect LogAnalyser to Claude Code for all projects
+claude mcp add --scope user loganalyser "--" "$env:LOCALAPPDATA\Programs\LogAnalyser\LogAnalyser.exe" --mcp
+
+# 2. Make the log investigator agent available in all projects
+New-Item -ItemType Directory -Force "$HOME\.claude\agents" | Out-Null
+Copy-Item "D:\VanguardProjects\Agents\LogAnalyser\.claude\agents\log-investigator.md" "$HOME\.claude\agents\"
+```
+
+Type the `--` in quotes, as shown: PowerShell removes a bare `--`, and Claude then stops with
+`unknown option '--mcp'`. If you installed LogAnalyser for all users, the app is in
+`C:\Program Files\LogAnalyser` instead. In step 2, use the path to your own copy of this repository.
+
+**On a Mac**, open Terminal and run:
+
+```bash
+# 1. Connect LogAnalyser to Claude Code for all projects
+claude mcp add --scope user loganalyser -- /Applications/LogAnalyser.app/Contents/MacOS/LogAnalyser --mcp
+
+# 2. Make the log investigator agent available in all projects
+mkdir -p ~/.claude/agents
+cp path/to/loganalyser/.claude/agents/log-investigator.md ~/.claude/agents/
+```
+
+If you don't have the repository on the Mac, open `.claude/agents/log-investigator.md` on GitHub,
+download the raw file, and save it as `~/.claude/agents/log-investigator.md`.
+
+Keep the server name `loganalyser`: the agent finds its tools under that name.
+
+**Then, in any project:**
+
+1. Start a new Claude Code session and type `/mcp`. **loganalyser** should show as connected.
+2. Ask in plain words, for example *"Use the log-investigator agent to find out why the job failed.
+   The logs are in C:\logs\app"*, or *"Analyse the logs in ./logs and tell me the likely cause."*
+3. Claude runs the analysis and answers with the root cause, the log lines that prove it and what to
+   do next. Ask it to open the report if you want the full visual report in the app.
+
+Installing a newer version of the app updates what Claude uses, as the command points to the
+installed app. To undo the setup, run `claude mcp remove --scope user loganalyser` and delete
+`~/.claude/agents/log-investigator.md`.
+
+**Claude Desktop** can use LogAnalyser too, through its config (see above). **Projects on the claude.ai
+website** cannot reach programs on your computer, so LogAnalyser cannot be connected there.
 
 The assistant reads log lines through your AI tool's own model, so they go to that tool's provider.
 For logs that must stay on your machine, use the desktop app with Ollama instead.
