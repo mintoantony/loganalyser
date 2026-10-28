@@ -7,7 +7,7 @@
 ; missing, Setup downloads and installs it with a progress bar. Without it the app still works, in the
 ; web browser. To try that path on a PC that has WebView2, run the installer with /WEBVIEW2=missing.
 #define AppName "LogAnalyser"
-#define AppVersion "1.1.1"
+#define AppVersion "1.2.0"
 #define AppExe "LogAnalyser.exe"
 ; The app folder is about 50 MB; ask for some room to spare.
 #define NeededMB 150

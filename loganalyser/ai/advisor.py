@@ -173,8 +173,13 @@ def select_lines(result: dict, max_lines: int) -> list[int]:
     return picked
 
 
-def build_evidence(result: dict, max_lines: int = 300, hide_personal_data: bool = True) -> tuple[str, list[int]]:
-    """The text sent to the LLM, and the record indices it cites."""
+def build_evidence(result: dict, max_lines: int = 300, hide_personal_data: bool = True,
+                   max_chars: int | None = None) -> tuple[str, list[int]]:
+    """The text sent to the LLM, and the record indices it cites.
+
+    With ``max_chars``, log lines stop being added once the text reaches that size, and a note says
+    how many were left out.
+    """
     clean = redact if hide_personal_data else (lambda s: s)
     meta = result["meta"]
     files = meta["files"]
@@ -220,7 +225,7 @@ def build_evidence(result: dict, max_lines: int = 300, hide_personal_data: bool 
     problem = [t for t in result["templates"] if t["level"] in ("WARN", "ERROR", "FATAL")]
     problem.sort(key=lambda t: t["first"] or 0)
     for t in problem[:60]:
-        out.append(f"- [{t['level']}] x{t['count']} first {_fmt_time(t['first'])}: {clean(t['text'])} "
+        out.append(f"- [{t['level']}] x{t['count']} first {_fmt_time(t['first'])}: {clean(t['text'][:300])} "
                    f"({', '.join(files[i]['name'] for i in t['files'])})")
 
     compare = result.get("compare")
@@ -233,21 +238,37 @@ def build_evidence(result: dict, max_lines: int = 300, hide_personal_data: bool 
         if compare["gone"]:
             out.append("Missing here: " + "; ".join(clean(e["text"]) for e in compare["gone"][:10]))
 
+    where = meta.get("codeLocations") or []
+    if where:
+        out.append("\n# Where errors were thrown in the application's own code (from stack traces)")
+        for w in where:
+            out.append(f"- x{w['count']} {w['exception'] or 'error'} at {w['file']} line {w['line']} "
+                       f"in {w['method']} (days: {', '.join(w['days'])}; first L{w['record']})")
+
     chosen = select_lines(result, max_lines)
     rows = {r[0]: r for r in result["records"]}
     out.append(f"\n# Log lines ({len(chosen)} chosen around the failures, in time order)")
     out.append("Format: reference | time UTC | file | level | message, with stack traces indented")
+    size = sum(len(part) + 1 for part in out)
+    cited: list[int] = []
     for idx in chosen:
         r = rows[idx]
         message = r[6] if len(r[6]) <= 600 else r[6][:600] + " …"
-        out.append(f"L{idx} | {_fmt_time(r[2], ms=True)} | {files[r[1]]['name']} | {_LEVELS[r[3]]} | {clean(message)}")
+        block = [f"L{idx} | {_fmt_time(r[2], ms=True)} | {files[r[1]]['name']} | {_LEVELS[r[3]]} | {clean(message)}"]
         if r[7]:
             detail = r[7].splitlines()
-            for line in detail[:14]:
-                out.append("      " + clean(line[:300]))
+            block += ["      " + clean(line[:300]) for line in detail[:14]]
             if len(detail) > 14:
-                out.append(f"      … {len(detail) - 14} more lines")
-    return "\n".join(out), chosen
+                block.append(f"      … {len(detail) - 14} more lines")
+        block_size = sum(len(part) + 1 for part in block)
+        if max_chars is not None and cited and size + block_size > max_chars:
+            out.append(f"… {len(chosen) - len(cited)} more lines left out to keep this under {max_chars:,} "
+                       "characters. Use search_logs or get_log_lines to read them.")
+            break
+        out += block
+        size += block_size
+        cited.append(idx)
+    return "\n".join(out), cited
 
 
 def _ref(value, valid: set[int]) -> int | None:

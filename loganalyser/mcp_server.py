@@ -37,11 +37,14 @@ INSTRUCTIONS = """LogAnalyser reads application logs, finds the most likely caus
 Start with analyse_logs on the folder or files the person gives you; it returns a run id and the ranked causes.
 Then use explain_cause, get_evidence, search_logs, get_log_lines and follow_request with that run id to dig in.
 Lines are cited as L<number>; pass the number to get_log_lines to see what surrounds it.
-The ranking is rule-based and explains itself; check it against the log lines before you state a cause as fact."""
+The ranking is rule-based and explains itself; check it against the log lines before you state a cause as fact.
+Where stack traces name the application's own code, the results list the file, line and method; read the code there when you can.
+For several days of mixed logs rather than one incident, that list of code locations is a better guide than the ranking."""
 
 server = MCPServer("LogAnalyser", version=__version__, instructions=INSTRUCTIONS)
 
 _READ = ToolAnnotations(read_only_hint=True, open_world_hint=False)
+_EVIDENCE_CHARS = 40_000  # well inside what AI tools accept from one tool call
 
 
 # ------------------------------------------------------------------ helpers
@@ -95,6 +98,9 @@ def _summary(run_id: str, result: dict, report: Path) -> str:
     meta, files = result["meta"], result["meta"]["files"]
     out = [f"Run {run_id}: {meta['records']:,} events in {len(files)} file(s), {meta['templates']:,} patterns, "
            f"from {_time(meta.get('first'))} to {_time(meta.get('last'))} UTC."]
+    if meta.get("copiesCounted"):
+        out.append(f"{meta['copiesCounted']:,} lines were copies of an event already logged in another file "
+                   "(same time, level and message) and are counted once.")
     incident = result.get("incident")
     if incident:
         line = f"Error spike from {_time(incident['start'])} to {_time(incident['end'])}"
@@ -129,6 +135,10 @@ def _summary(run_id: str, result: dict, report: Path) -> str:
             out += [f"  {c['rank']}. {_clean(c['title'])} [{c['category']}] {c['likelihood']:.0f}%, {c['count']:,} events"
                     for c in causes[1:6]]
 
+    where = meta.get("codeLocations") or []
+    if where:
+        out.append("\nErrors by where they were thrown in the application's own code:")
+        out += [_where(w) for w in where[:8]]
     if incident and incident.get("precursors"):
         out.append("\nSeen for the first time just before the first failure:")
         out += [f"  {p['beforeText']}: {_clean(_pattern_text(result, p['template']))} (L{p['record']})"
@@ -253,10 +263,18 @@ def explain_cause(run_id: str, rank: int = 1) -> str:
         out.append("\nWhat followed (new failures after it started):")
         out += [f"  {s['deltaText']}: {_clean(s['title'] or _pattern_text(result, s['template']))} "
                 f"(x{s['count']}, {', '.join(files[i]['name'] for i in s['files'])})" for s in cause["chain"]]
+    if cause.get("code"):
+        out.append("\nWhere in the code (first frame in the application's own code, from the stack traces):")
+        out += [_where(w) for w in cause["code"]]
     if cause.get("fixes"):
         out.append("\nWhat to try:")
         out += [f"  - {fix}" for fix in cause["fixes"]]
     return "\n".join(out)
+
+
+def _where(w: dict) -> str:
+    return (f"  {w['file']} line {w['line']}, in {w['method']}: {w['exception'] or 'error'} x{w['count']} "
+            f"(days: {', '.join(w['days'])}; first L{w['record']})")
 
 
 @server.tool(title="Get the evidence pack", annotations=_READ)
@@ -264,9 +282,10 @@ def get_evidence(run_id: str, max_lines: int = 150) -> str:
     """The whole incident in one text, for forming your own view: overview, every candidate cause
     with its signals, what changed just before, all warning and error patterns, the comparison with
     the healthy run, and up to max_lines log lines chosen around the failures (cited as L<number>).
-    This is the same pack the app sends to its own AI second opinion."""
+    This is the same pack the app sends to its own AI second opinion. It is kept under about
+    40,000 characters; lines left out can be read with search_logs or get_log_lines."""
     text, _ = build_evidence(_result(run_id), max_lines=max(20, min(max_lines, 1000)),
-                             hide_personal_data=Settings.load().privacy.redact)
+                             hide_personal_data=Settings.load().privacy.redact, max_chars=_EVIDENCE_CHARS)
     return text
 
 

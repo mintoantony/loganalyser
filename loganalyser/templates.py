@@ -25,6 +25,8 @@ _MASKS: list[tuple[re.Pattern[str], object]] = [
      lambda m: "/".join("{id}" if re.search(r"\d", seg) else seg for seg in m.group(0).split("/"))),
     (re.compile(r"\b[A-Za-z]:\\[^\s\"']+"), "<PATH>"),
     (re.compile(r"\b(?=[A-Za-z_-]*\d)[A-Za-z0-9_-]*\d[A-Za-z0-9_-]*-[A-Za-z0-9_-]+\b"), "<ID>"),
+    # Random tokens such as session or circuit IDs: 20+ characters mixing capitals, small letters and digits.
+    (re.compile(r"(?<![\w<])(?=[\w-]*\d)(?=[\w-]*[A-Z])(?=[\w-]*[a-z])[\w-]{20,}(?![\w>])"), "<ID>"),
     (re.compile(r"(?<![\w.<])[-+]?\d+(?:\.\d+)?(?:ms|s|us|µs|ns|m|h|kb|mb|gb|KB|MB|GB|B|%)?(?![\w>])"), "<NUM>"),
 ]
 _TOKEN_SPLIT = re.compile(r"\s+")

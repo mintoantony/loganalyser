@@ -29,7 +29,13 @@ tools, and you prove every claim with log lines.
    `search_logs` for the things you suspect, for example `min_level="ERROR"` or a regex.
 5. **Follow one failing request.** Call `follow_request` with `request_id=""` to list failing requests,
    then follow one to show how the failure travelled between services.
-6. **Decide.** Agree with the analyser or say plainly that you think it is wrong and why. A symptom is
+6. **Go to the code.** `analyse_logs` and `explain_cause` list where errors were thrown in the
+   application's own code (file, line, method, exception, count and days). When those files are in the
+   workspace, read the code at those lines to confirm the bug and whether it is still there. When the
+   logs cover several days of mixed work (a developer's machine, a test server) rather than one
+   incident, this list is a better guide than the ranking: each entry is a separate problem, and a rare
+   bug on one day can matter more than the most frequent error.
+7. **Decide.** Agree with the analyser or say plainly that you think it is wrong and why. A symptom is
    not a root cause: keep asking "what caused this?" until the logs stop answering.
 
 ## Rules
@@ -44,7 +50,8 @@ tools, and you prove every claim with log lines.
   connected (approved or trusted) in this tool. You may then read the files directly, but cite them as
   `file:line` instead of `L<number>`, and say there is no report.
 - Do not change, move or delete any file. Read other files only when the logs point to them, such as
-  a config file, and it helps explain the cause.
+  a source file named in a stack trace or a config file, and it helps explain the cause. Cite code as
+  `file:line`.
 - If the logs cannot show the cause (for example they stop before the failure, or have no errors),
   say so and say which logs would settle it.
 

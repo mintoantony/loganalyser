@@ -50,8 +50,8 @@ _TS_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"((?:" + _MONTHS + r") {1,2}\d{1,2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)"), "syslog"),
     # 05-Mar-2024 10:42:01.123 (Tomcat)
     (re.compile(r"(\d{2}-(?:" + _MONTHS + r")-\d{4} \d{2}:\d{2}:\d{2}(?:\.\d+)?)"), "tomcat"),
-    # 03/05/2024 10:42:01 (US style)
-    (re.compile(r"(\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}(?:\.\d+)?)"), "us"),
+    # 03/05/2024 10:42:01.123 +01:00: month first (US) or day first (UK, Serilog); decided per file
+    (re.compile(r"(\d{1,2}/\d{1,2}/\d{4}[ T]\d{2}:\d{2}:\d{2}(?:[.,]\d{1,7})?(?:\s?Z|\s?[+-]\d{2}:?\d{2}\b)?)"), "us"),
     # 10:42:01.123 (time only)
     (re.compile(r"^\[?(\d{2}:\d{2}:\d{2}[.,]\d{3,6})\]?"), "time"),
 ]
@@ -70,7 +70,7 @@ _SYSLOG_HEAD_RE = re.compile(r"^(?P<host>[\w.-]+) (?P<proc>[\w./-]+)(?:\[(?P<pid
 _THREAD_RE = re.compile(r"^\[(?P<thread>[^\]]{1,80})\]\s*")
 # A logger is a dotted name ("com.shop.OrderService:" / "app.db -") or a single name before " - ".
 _LOGGER_RE = re.compile(
-    r"^(?:(?P<logger>[A-Za-z_$][\w$]*(?:\.[\w$-]+)+)\s*(?:-|:)\s+|(?P<simple>[A-Za-z_][\w-]*)\s+-\s+)"
+    r"^(?:(?P<logger>[A-Za-z_$][\w$]*(?:\.[\w$-]+)+)\s*(?P<sep>-|:|\|)\s+|(?P<simple>[A-Za-z_][\w-]*)\s+-\s+)"
 )
 _PY_LOGGING_RE = re.compile(r"^(?P<level>[A-Z]+):(?P<logger>[\w.]+):(?P<msg>.*)$")
 
@@ -143,7 +143,7 @@ def normalise_level(token: str | None) -> str | None:
     return _LEVEL_ALIASES.get(token.strip("[]<>").upper())
 
 
-def parse_timestamp(text: str, kind: str, default_year: int) -> float | None:
+def parse_timestamp(text: str, kind: str, default_year: int, day_first: bool = False) -> float | None:
     try:
         if kind == "iso":
             value = text.replace("/", "-").replace(",", ".").replace(" Z", "Z")
@@ -167,7 +167,12 @@ def parse_timestamp(text: str, kind: str, default_year: int) -> float | None:
         elif kind == "tomcat":
             dt = datetime.strptime(text.split(".")[0], "%d-%b-%Y %H:%M:%S")
         elif kind == "us":
-            dt = datetime.strptime(text.split(".")[0], "%m/%d/%Y %H:%M:%S")
+            date, _, rest = text.replace("T", " ", 1).partition(" ")
+            first, second, year = date.split("/")
+            month, day = (second, first) if day_first else (first, second)
+            value = f"{year}-{int(month):02d}-{int(day):02d} " + rest.replace(",", ".").replace(" Z", "Z")
+            value = re.sub(r"\s([+-]\d{2}:?\d{2})$", r"\1", value)
+            dt = datetime.fromisoformat(re.sub(r"(\.\d{6})\d+", r"\1", value))
         elif kind == "time":
             hms, frac = re.split(r"[.,]", text)
             dt = datetime.strptime(f"1970-01-01 {hms}", "%Y-%m-%d %H:%M:%S")
@@ -257,19 +262,20 @@ def _parse_json_line(line: str, file: str, line_no: int) -> LogRecord | None:
     return record
 
 
-def _find_timestamp(line: str, default_year: int) -> tuple[float | None, int, int, str | None]:
+def _find_timestamp(line: str, default_year: int, day_first: bool = False) -> tuple[float | None, int, int, str | None]:
     """Return (epoch, start, end, kind) for a timestamp in the first part of the line."""
     head = line[:80]
     for pattern, kind in _TS_PATTERNS:
         match = pattern.search(head)
         if match and match.start() <= 40:
-            epoch = parse_timestamp(match.group(1), kind, default_year)
+            epoch = parse_timestamp(match.group(1), kind, default_year, day_first)
             if epoch is not None:
                 return epoch, match.start(), match.end(), kind
     return None, -1, -1, None
 
 
-def _parse_text_line(line: str, file: str, line_no: int, default_year: int) -> tuple[LogRecord, bool]:
+def _parse_text_line(line: str, file: str, line_no: int, default_year: int,
+                     day_first: bool = False) -> tuple[LogRecord, bool]:
     """Parse one plain-text line. Returns (record, starts_new_event)."""
     record = LogRecord(file=file, line_no=line_no, raw=line)
 
@@ -305,7 +311,7 @@ def _parse_text_line(line: str, file: str, line_no: int, default_year: int) -> t
         record.ids = extract_ids(line)
         return record, True
 
-    ts, start, end, kind = _find_timestamp(line, default_year)
+    ts, start, end, kind = _find_timestamp(line, default_year, day_first)
     if ts is None:
         return record, False
 
@@ -362,12 +368,40 @@ def _parse_text_line(line: str, file: str, line_no: int, default_year: int) -> t
     if not record.logger:
         logger = _LOGGER_RE.match(rest)
         name = (logger.group("logger") or logger.group("simple")) if logger else None
-        if name and len(name) <= 80:
+        if name and len(name) <= 200:
             record.logger = name
             rest = rest[logger.end():]
+            if logger.group("sep") == "|":
+                rest = _split_pipe_layout(rest, record)
+    # Some layouts write line breaks as "[CRLF]": the first line is the message, the rest is detail.
+    if "[CRLF]" in rest:
+        rest, *more = rest.split("[CRLF]")
+        record.detail = [part for part in more if part.strip()] + record.detail
     record.message = rest.strip() or line.strip()
     record.ids = extract_ids(line)
     return record, True
+
+
+def _split_pipe_layout(rest: str, record: LogRecord) -> str:
+    """Serilog-style "Logger | message | exception | {properties}": return the message.
+
+    The exception goes to the detail lines and the properties to the fields.
+    """
+    head, sep, props = rest.rpartition(" | {")
+    if sep and props.rstrip().endswith("}"):
+        try:
+            values = json.loads("{" + props)
+        except ValueError:
+            values = None
+        if isinstance(values, dict):
+            record.fields.update({k: v for k, v in values.items() if not isinstance(v, (dict, list))})
+            rest = head
+    message, sep, exception = rest.rpartition(" | ")
+    if sep:
+        rest = message
+        if exception.strip():
+            record.detail = [part for part in exception.split("[CRLF]") if part.strip()]
+    return rest.rstrip(" |")
 
 
 def _infer_level(record: LogRecord) -> None:
@@ -391,14 +425,56 @@ def read_lines(path: Path) -> list[str]:
         return [line.rstrip("\r\n") for line in handle]
 
 
-def parse_lines(lines: list[str], name: str, default_year: int | None = None) -> ParsedFile:
+_SLASH_DATE_RE = re.compile(r"(?<![\d/])(\d{1,2})/(\d{1,2})/(\d{4})[ T]\d{2}:\d{2}")
+_NAME_DATE_RE = re.compile(r"(?<!\d)(20\d{2})[-_.]?(0[1-9]|1[0-2])[-_.]?(0[1-9]|[12]\d|3[01])(?!\d)")
+
+
+def _day_first(lines: list[str], name: str, hint: float | None) -> bool:
+    """Whether "03/05/2024" dates in this file mean 3 May (day first) or March 5.
+
+    A day above 12 settles it. Otherwise the date in the file name ("Web.App.20240503.txt"),
+    then the file's modified time, picks the reading that lands closer.
+    """
+    first_seen = None
+    for line in lines[:5000]:
+        match = _SLASH_DATE_RE.search(line[:60])
+        if not match:
+            continue
+        a, b = int(match.group(1)), int(match.group(2))
+        if a > 12 >= b:
+            return True
+        if b > 12 >= a:
+            return False
+        first_seen = first_seen or (a, b, int(match.group(3)))
+    if first_seen is None:
+        return False
+    named = _NAME_DATE_RE.search(Path(name).name)
+    if named:
+        target = datetime(int(named.group(1)), int(named.group(2)), int(named.group(3)), tzinfo=timezone.utc).timestamp()
+    elif hint is not None:
+        target = hint
+    else:
+        return False
+    a, b, year = first_seen
+
+    def distance(month: int, day: int) -> float:
+        try:
+            return abs(datetime(year, month, day, tzinfo=timezone.utc).timestamp() - target)
+        except ValueError:
+            return float("inf")
+    return distance(b, a) < distance(a, b)
+
+
+def parse_lines(lines: list[str], name: str, default_year: int | None = None,
+                modified: float | None = None) -> ParsedFile:
     year = default_year or datetime.now().year
+    day_first = _day_first(lines, name, modified)
     # In a file where events carry no timestamp, only obvious continuation lines
     # (indented, "at ...", "Caused by:") are folded into the previous event.
     sample = [line for line in lines[:300] if line.strip()]
     structured = sum(
         1 for line in sample
-        if line.lstrip().startswith("{") or _find_timestamp(line, year)[0] is not None
+        if line.lstrip().startswith("{") or _find_timestamp(line, year, day_first)[0] is not None
         or _PY_LOGGING_RE.match(line)
     )
     has_event_starts = bool(sample) and structured / len(sample) >= 0.2
@@ -409,13 +485,15 @@ def parse_lines(lines: list[str], name: str, default_year: int | None = None) ->
         if not line.strip():
             continue
         stripped = line.lstrip()
-        if stripped.startswith("{") and stripped.rstrip().endswith("}"):
+        # Indented JSON under a text event (.NET "Additional Properties") belongs to that event.
+        indented_detail = bool(records) and has_event_starts and line[:1].isspace()
+        if stripped.startswith("{") and stripped.rstrip().endswith("}") and not indented_detail:
             record = _parse_json_line(stripped, name, line_no)
             if record is not None:
                 json_lines += 1
                 records.append(record)
                 continue
-        record, starts_event = _parse_text_line(line, name, line_no, year)
+        record, starts_event = _parse_text_line(line, name, line_no, year, day_first)
         if records and not starts_event:
             in_trace = bool(records[-1].detail) and bool(_PY_EXC_LINE_RE.match(line))
             if has_event_starts or in_trace or _CONTINUATION_RE.match(line):
@@ -451,9 +529,10 @@ def parse_lines(lines: list[str], name: str, default_year: int | None = None) ->
 def parse_file(path: str | Path, display_name: str | None = None) -> ParsedFile:
     path = Path(path)
     try:
-        year = datetime.fromtimestamp(path.stat().st_mtime).year
+        modified = path.stat().st_mtime
+        year = datetime.fromtimestamp(modified).year
     except OSError:
-        year = None
-    parsed = parse_lines(read_lines(path), display_name or str(path), default_year=year)
+        modified, year = None, None
+    parsed = parse_lines(read_lines(path), display_name or str(path), default_year=year, modified=modified)
     parsed.path = str(path)
     return parsed

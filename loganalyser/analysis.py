@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from statistics import median
 
+from .stacktrace import code_location
 from .parser import LEVEL_RANK, LEVELS, LogRecord, ParsedFile
 from .rules import BUILTIN_RULES, Rule
 from .templates import Template, TemplateMiner
@@ -155,6 +156,8 @@ class Analysis:
         self._emerging_first: dict[int, float] = {}
         self._origin_file: int | None = None
         self.trace_stats = {"total": 0, "multiFile": 0, "withErrors": 0}
+        self.copies_dropped = 0
+        self.code: list = []
 
         self.file_index = {f.path: i for i, f in enumerate(files)}
         self.records: list[LogRecord] = []
@@ -175,6 +178,8 @@ class Analysis:
                                       self.record_file[i], self.records[i].line_no))
         self.records = [self.records[i] for i in order]
         self.record_file = [self.record_file[i] for i in order]
+        self._drop_copies()
+        self.code = [code_location(r) for r in self.records]
 
         self._step("patterns")
         for i, record in enumerate(self.records):
@@ -219,10 +224,37 @@ class Analysis:
         if callable(self.options.progress):
             self.options.progress(stage)
 
+    def _drop_copies(self) -> None:
+        """Count an event once when several files log it (one app writing to an app, a debug and an
+        errors file): same time to the millisecond, level and message. The copy with the most
+        detail, usually the one with the stack trace, is kept."""
+        kept: dict[tuple, int] = {}
+        drop: set[int] = set()
+        for i, record in enumerate(self.records):
+            if record.ts is None or record.ts % 1 == 0:
+                continue  # without milliseconds, two events in one second could be told apart only by luck
+            key = (record.ts, record.level, record.message)
+            other = kept.get(key)
+            if other is None:
+                kept[key] = i
+            elif self.record_file[other] != self.record_file[i]:
+                loser, winner = sorted((other, i), key=lambda j: len(self.records[j].detail))
+                drop.add(loser)
+                kept[key] = winner
+        self.copies_dropped = len(drop)
+        if drop:
+            self.records = [r for i, r in enumerate(self.records) if i not in drop]
+            self.record_file = [f for i, f in enumerate(self.record_file) if i not in drop]
+
     def _add_template(self, record: LogRecord, index: int) -> Template:
         key = record.fields.get("pattern")
         if key:
             return self.miner.add(key, index, masked=True)
+        # The same message thrown from two places is two problems, so the place joins the pattern.
+        where = self.code[index] if index >= 0 else code_location(record)
+        if where:
+            return self.miner.add(f"{record.message} [{where.short}]", index,
+                                  source=f"{record.logger}|{where.short}")
         return self.miner.add(record.message, index, source=record.logger)
 
     def _collect_stats(self, baseline_counts: Counter) -> None:
@@ -477,7 +509,7 @@ class Analysis:
                 "files": sorted({self.record_file[i] for i in live}), "firstRecord": first_record,
                 "evidence": self._evidence(live, first_record), "factors": factors,
                 "custom": bool(rule and rule.custom), "level": max((m.level for m in members), key=lambda lv: LEVEL_RANK.get(lv, 2)),
-                "emerging": key in position,
+                "emerging": key in position, "code": self._code_summary(live),
             })
 
         hypotheses.sort(key=lambda h: h["score"], reverse=True)
@@ -665,7 +697,25 @@ class Analysis:
                 "levels": {lv: levels.get(lv, 0) for lv in LEVELS},
                 "first": min(times) if times else None, "last": max(times) if times else None,
                 "templates": sum(1 for s in self.stats.values() if any(i >= 0 for i in s.template.record_ids)),
-                "baseline": [f.name for f in self.baseline], "matchPatterns": self.options.match_patterns}
+                "baseline": [f.name for f in self.baseline], "matchPatterns": self.options.match_patterns,
+                "copiesCounted": self.copies_dropped, "codeLocations": self._code_summary(
+                    [i for i, r in enumerate(self.records) if LEVEL_RANK.get(r.level, 2) >= LEVEL_RANK["ERROR"]], 12)}
+
+    def _code_summary(self, indexes: list[int], limit: int = 3) -> list[dict]:
+        """Where these errors were thrown in the application's own code, most frequent first."""
+        counts: Counter = Counter()
+        days: dict = defaultdict(set)
+        first: dict = {}
+        for i in indexes:
+            where = self.code[i]
+            if where is None:
+                continue
+            counts[where] += 1
+            first.setdefault(where, i)
+            if self.records[i].ts is not None:
+                days[where].add(datetime.fromtimestamp(self.records[i].ts, timezone.utc).strftime("%Y-%m-%d"))
+        return [{"exception": w.exception, "file": w.file, "line": w.line, "method": w.method, "count": n,
+                 "days": sorted(days[w]), "record": first[w]} for w, n in counts.most_common(limit)]
 
     def _templates_json(self, timeline: dict) -> list[dict]:
         start, size = timeline["start"], timeline["bucket"]

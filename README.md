@@ -31,8 +31,8 @@ Installable builds:
 
 | Platform | How | Result |
 |---|---|---|
-| Windows | `powershell -ExecutionPolicy Bypass -File packaging\build_windows.ps1` | `dist\LogAnalyser\LogAnalyser.exe`, a portable zip, and, if [Inno Setup](https://jrsoftware.org/isinfo.php) is installed, `LogAnalyser-1.1.1-Windows-Setup.exe` |
-| macOS (run on a Mac) | `bash packaging/build_mac.sh` | `dist/LogAnalyser.app`, an installer wizard `LogAnalyser-1.1.1-macOS-Installer.pkg`, and a drag-to-Applications `.dmg` |
+| Windows | `powershell -ExecutionPolicy Bypass -File packaging\build_windows.ps1` | `dist\LogAnalyser\LogAnalyser.exe`, a portable zip, and, if [Inno Setup](https://jrsoftware.org/isinfo.php) is installed, `LogAnalyser-1.2.0-Windows-Setup.exe` |
+| macOS (run on a Mac) | `bash packaging/build_mac.sh` | `dist/LogAnalyser.app`, an installer wizard `LogAnalyser-1.2.0-macOS-Installer.pkg`, and a drag-to-Applications `.dmg` |
 | Both, in CI | push a `v*` tag or run the *Build desktop app* workflow (`.github/workflows/desktop.yml`) | installers as build artifacts |
 
 The Windows installer is an ordinary setup wizard, made for people with no technical background:
@@ -259,15 +259,26 @@ For logs that must stay on your machine, use the desktop app with Ollama instead
 ## What it does
 
 **Reads almost any log.** It works out the format line by line: JSON lines (including numeric
-Bunyan/pino levels), log4j/logback, Spring Boot, Python logging, PostgreSQL, Redis, syslog, and
-Apache/Nginx access logs. `.gz` files work too. In a folder, it reads files with log-like names and
-also text files with no extension or a rotation number, such as `syslog` or `messages.1`. Stack traces
-and tracebacks stay attached to the event that started them. When a line has no level, the level is
-guessed from its text.
+Bunyan/pino levels), log4j/logback, Spring Boot, ASP.NET with Serilog, Python logging, PostgreSQL,
+Redis, syslog, and Apache/Nginx access logs. `.gz` files work too. In a folder, it reads files with
+log-like names and also text files with no extension or a rotation number, such as `syslog` or
+`messages.1`. Stack traces and tracebacks stay attached to the event that started them. When a line
+has no level, the level is guessed from its text.
+
+Dates such as `08/06/2026` are read day first or month first, decided per file: a day above 12
+settles it, and otherwise the date in the file name (`Web.App.20260608.txt`) or the file's modified
+time does. Time zone offsets such as `+01:00` are applied. When an app writes the same event to
+several files (an app, a debug and an errors file), it is counted once.
 
 **Finds patterns.** Messages that differ only in numbers, IDs, IPs, UUIDs or durations are grouped
 together, so 14,000 lines become a few dozen patterns. URL routes keep their shape:
-`/api/orders/{id}/status`.
+`/api/orders/{id}/status`. An error's place in your code is part of its pattern, so one message
+("Unhandled exception in circuit") thrown from two places counts as two problems.
+
+**Points to the code.** From the stack traces it lists where errors were thrown in your own code
+(framework and library frames are skipped): file, line, method, exception, how many times and on
+which days. For several days of mixed logs, such as a developer's machine, this list is often a
+better guide than the ranking.
 
 **Ranks likely causes.** Every warning and error pattern is grouped by what probably caused it and
 scored on the questions an engineer would ask:

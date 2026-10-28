@@ -224,7 +224,10 @@ BUILTIN_RULES: list[Rule] = [
     # Runtime / application
     _r("crash", "Process crashed", "Runtime", 0.85,
        [r"Segmentation fault", r"SIGSEGV", r"SIGABRT", r"core dumped", r"fatal error: runtime",
-        r"panic:", r"Unhandled exception", r"terminate called after throwing", r"A fatal error has been detected"],
+        # .NET writes "Unhandled exception." when the process dies; a logged "Unhandled exception in
+        # circuit" or "...while executing the request" is one page or request failing, not a crash.
+        r"panic:", r"(?m)^Unhandled exception\. ", r"Process terminated", r"terminate called after throwing",
+        r"A fatal error has been detected"],
        "The process ended abruptly because of a crash in its own code or a native library.",
        ["Read the stack trace from the crash.", "Check for a recent deploy or native library upgrade."]),
     _r("restart_loop", "Service restarting repeatedly", "Runtime", 0.5,

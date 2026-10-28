@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "loganalyser"
-version = "1.1.1"
+version = "1.2.0"
 description = "Read logs, find the likely cause of a failure, match events across files and runs, and write an interactive HTML report. Optional LLM second opinion and desktop app."
 requires-python = ">=3.11"
 readme = "README.md"
