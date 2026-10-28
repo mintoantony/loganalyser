@@ -53,7 +53,7 @@ BUILTIN_RULES: list[Rule] = [
         "Raise the memory limit (-Xmx, container limit) only after ruling out a leak.",
         "Look at what ran just before: a large request, batch job or query result."]),
     _r("disk_full", "Disk is full", "Resources", 0.95,
-       [r"No space left on device", r"disk (?:is )?full", r"ENOSPC", r"Disk quota exceeded",
+       [r"No space left on device", r"(?:disk|volume|file ?system|partition) (?:is )?full", r"ENOSPC", r"Disk quota exceeded",
         r"could not extend file", r"insufficient disk space"],
        "Writes failed because the disk or volume has no free space left.",
        ["Free space or grow the volume.", "Rotate and compress logs; remove old temp files.",

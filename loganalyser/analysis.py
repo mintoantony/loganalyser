@@ -34,6 +34,13 @@ _NICE_BUCKETS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200,
                  10800, 21600, 43200, 86400, 172800, 604800]
 _LEVEL_WEIGHT = {"FATAL": 1.0, "ERROR": 0.8, "WARN": 0.5, "INFO": 0.2, "DEBUG": 0.1, "TRACE": 0.1}
 _CAUSED_BY_RE = re.compile(r"Caused by:\s*([\w.$]+(?:Exception|Error)[^\n]*)")
+# Deploys, restarts and config changes: these can take a while to cause failures (a disk that fills,
+# a cache that empties), so they are looked for further back than other new events.
+_CHANGE_RE = re.compile(
+    r"(?i)\b(?:start(?:ed|ing)?|stopp(?:ed|ing)|shutting down|restart(?:ed|ing)?|deploy(?:ed|ing|ment)?|"
+    r"releas(?:e|ed|ing)|upgrad(?:e|ed|ing)|roll(?:ed)? ?back|migrat(?:e|ed|ing|ion)|reload(?:ed|ing)?|"
+    r"config(?:uration)?|log level|feature flag|enabled|disabled|SIG(?:TERM|HUP)|v\d+\.\d+)\b"
+)
 
 
 @dataclass(slots=True)
@@ -216,7 +223,7 @@ class Analysis:
         key = record.fields.get("pattern")
         if key:
             return self.miner.add(key, index, masked=True)
-        return self.miner.add(record.message, index)
+        return self.miner.add(record.message, index, source=record.logger)
 
     def _collect_stats(self, baseline_counts: Counter) -> None:
         for template in self.miner.templates:
@@ -229,8 +236,14 @@ class Analysis:
                 stats.first = min(times) if times else None
                 stats.last = max(times) if times else None
                 stats.files = Counter(self.record_file[i] for i in live)
-                samples = [live[0], live[len(live) // 2], live[-1]]
-                text = "\n".join(self._match_text(self.records[i]) for i in dict.fromkeys(samples))
+                # Rules read a spread of lines plus the first from each file, so which lines are picked
+                # does not decide whether a pattern is recognised.
+                first_per_file = {}
+                for i in live:
+                    first_per_file.setdefault(self.record_file[i], i)
+                step = max(1, len(live) // 10)
+                samples = list(first_per_file.values())[:10] + live[::step][:10] + [live[-1]]
+                text ="\n".join(self._match_text(self.records[i]) for i in dict.fromkeys(samples))
                 stats.rule, stats.rules = _rule_for(text, self.rules)
                 caused = _CAUSED_BY_RE.findall(text)
                 if caused:
@@ -484,14 +497,16 @@ class Analysis:
             return []
         span = timeline["end"] - timeline["start"]
         lead = max(10 * timeline["bucket"], 0.15 * span)
+        change_lead = max(lead, 0.5 * span)
         out = []
         for stats in self.stats.values():
             if stats.template.id in self._candidate_ids or stats.first is None:
                 continue
-            if not (first_failure - lead <= stats.first <= first_failure):
+            window = change_lead if _CHANGE_RE.search(stats.template.text) else lead
+            if not (first_failure - window <= stats.first <= first_failure):
                 continue
-            # Must be new: nothing like it earlier in the logs, and not part of steady traffic.
-            if stats.first - timeline["start"] < 0.05 * span or stats.template.count > 60:
+            # Must be new: nothing like it earlier in the logs or in the healthy run, and not steady traffic.
+            if stats.first - timeline["start"] < 0.05 * span or stats.template.count > 60 or stats.baseline_count:
                 continue
             out.append({"template": stats.template.id, "first": stats.first, "count": stats.template.count,
                         "before": round(first_failure - stats.first, 3),

@@ -13,7 +13,7 @@ $py = Join-Path $root ".venv\Scripts\python.exe"
 & $py packaging\make_icons.py
 & $py -m PyInstaller packaging\loganalyser.spec --noconfirm --clean --distpath dist --workpath build
 
-$zip = "dist\LogAnalyser-1.1.0-Windows-portable.zip"
+$zip = "dist\LogAnalyser-1.1.1-Windows-portable.zip"
 if (Test-Path $zip) { Remove-Item $zip }
 Compress-Archive -Path "dist\LogAnalyser" -DestinationPath $zip
 Write-Host "Portable app: $zip"
@@ -22,7 +22,7 @@ $iscc = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\I
     Where-Object { Test-Path $_ } | Select-Object -First 1
 if ($iscc) {
     & $iscc packaging\installer.iss
-    Write-Host "Installer: dist\LogAnalyser-1.1.0-Windows-Setup.exe"
+    Write-Host "Installer: dist\LogAnalyser-1.1.1-Windows-Setup.exe"
 } else {
     Write-Host "Inno Setup not found, so no installer was made. Install it from https://jrsoftware.org/isinfo.php to get one."
 }

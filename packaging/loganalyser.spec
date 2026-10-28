@@ -8,7 +8,7 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy
 ROOT = Path(SPECPATH).parent
 PKG = ROOT / "loganalyser"
 APP_NAME = "LogAnalyser"
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 datas = [
     (str(PKG / "assets"), "loganalyser/assets"),

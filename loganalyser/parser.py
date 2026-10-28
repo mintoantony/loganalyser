@@ -44,6 +44,8 @@ _TS_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     ), "iso"),
     # 10/Oct/2023:13:55:36 +0000 (Apache / Nginx)
     (re.compile(r"\[(\d{2}/(?:" + _MONTHS + r")/\d{4}:\d{2}:\d{2}:\d{2}(?: [+-]\d{4})?)\]"), "clf"),
+    # 5 Mar 2024 10:42:01.123 (Redis)
+    (re.compile(r"(\d{1,2} (?:" + _MONTHS + r") \d{4} \d{2}:\d{2}:\d{2}(?:\.\d+)?)"), "dmy"),
     # Mar  5 10:42:01 (syslog, no year)
     (re.compile(r"((?:" + _MONTHS + r") {1,2}\d{1,2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)"), "syslog"),
     # 05-Mar-2024 10:42:01.123 (Tomcat)
@@ -60,6 +62,10 @@ _ACCESS_RE = re.compile(
 )
 _RESPONSE_TIME_RE = re.compile(r"^\s*(?:(?:rt|request_time|response_time)=)?([\d.]+)\b|\b(?:rt|request_time|response_time)=([\d.]+)")
 _SPRING_PID_RE = re.compile(r"^\d+\s+---\s+")
+# Redis: "1:M 28 Oct 2026 14:31:05.120 # message". The letter is the role and the mark the level:
+# "." debug, "-" verbose, "*" notice, "#" warning.
+_REDIS_HEAD_RE = re.compile(r"^(?P<pid>\d+):(?P<role>[XCSM]) $")
+_REDIS_MARK_RE = re.compile(r"^\s*(?P<mark>[.*#-])\s+")
 _SYSLOG_HEAD_RE = re.compile(r"^(?P<host>[\w.-]+) (?P<proc>[\w./-]+)(?:\[(?P<pid>\d+)\])?: ")
 _THREAD_RE = re.compile(r"^\[(?P<thread>[^\]]{1,80})\]\s*")
 # A logger is a dotted name ("com.shop.OrderService:" / "app.db -") or a single name before " - ".
@@ -81,7 +87,7 @@ ID_PATTERNS = [
     ),
     re.compile(r"(?i)\btraceparent[=:]\s*\d{2}-([0-9a-f]{32})-"),
 ]
-_JSON_ID_KEYS = ("trace_id", "traceId", "request_id", "requestId", "correlation_id",
+_JSON_ID_KEYS = ("trace_id", "traceId", "request_id", "requestId", "reqId", "req_id", "correlation_id",
                  "correlationId", "span_id", "txn_id", "order_id", "orderId", "session_id")
 
 _JSON_TS_KEYS = ("@timestamp", "timestamp", "time", "ts", "datetime", "date", "eventTime", "t")
@@ -152,6 +158,10 @@ def parse_timestamp(text: str, kind: str, default_year: int) -> float | None:
         elif kind == "syslog":
             base = re.sub(r"\s+", " ", text).split(".")[0]
             dt = datetime.strptime(f"{default_year} {base}", "%Y %b %d %H:%M:%S")
+            if "." in text:
+                dt = dt.replace(microsecond=int(text.split(".")[1][:6].ljust(6, "0")))
+        elif kind == "dmy":
+            dt = datetime.strptime(text.split(".")[0], "%d %b %Y %H:%M:%S")
             if "." in text:
                 dt = dt.replace(microsecond=int(text.split(".")[1][:6].ljust(6, "0")))
         elif kind == "tomcat":
@@ -300,6 +310,20 @@ def _parse_text_line(line: str, file: str, line_no: int, default_year: int) -> t
         return record, False
 
     record.ts = ts
+    redis = _REDIS_HEAD_RE.match(line[:start]) if kind == "dmy" else None
+    if redis:
+        mark = _REDIS_MARK_RE.match(line[end:])
+        symbol = mark.group("mark") if mark else ""
+        record.logger = "redis"
+        record.fields.update(pid=redis.group("pid"), role=redis.group("role"))
+        record.message = line[end + (mark.end() if mark else 0):].strip()
+        # Warnings ("#") and lines without a mark are left to the text, so "Write error saving DB"
+        # still counts as an error.
+        record.level = {".": "DEBUG", "-": "DEBUG", "*": "INFO"}.get(symbol, "")
+        if symbol == "#" and not _ERROR_HINT_RE.search(record.message):
+            record.level = "WARN"
+        record.ids = extract_ids(line)
+        return record, True
     rest = (line[:start] + " " + line[end:]).strip() if start > 0 else line[end:].strip()
     rest = rest.lstrip("]|-: ")
 
@@ -312,6 +336,11 @@ def _parse_text_line(line: str, file: str, line_no: int, default_year: int) -> t
 
     # Level: the first level word within the first part of what remains.
     level_match = _LEVEL_RE.search(rest[:60])
+    # A level column is in capitals, in brackets or first ("error: ..."). A lower-case word later on
+    # ("usage 91% (warning above 85%)") is part of the message, and the level is guessed from the text.
+    if level_match and not (level_match.start() == 0 or level_match.group(1).isupper()
+                            or level_match.group(0)[0] in "[<"):
+        level_match = None
     short = _SHORT_LEVEL_RE.match(rest)
     if level_match:
         record.level = normalise_level(level_match.group(1)) or "INFO"

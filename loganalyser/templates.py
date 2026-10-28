@@ -76,11 +76,16 @@ class TemplateMiner:
     def __init__(self, similarity: float = 0.55):
         self.similarity = similarity
         self.templates: list[Template] = []
-        self._groups: dict[tuple[int, str], list[Template]] = {}
+        self._groups: dict[tuple[int, str, str], list[Template]] = {}
         self._exact: dict[str, Template] = {}
 
-    def add(self, message: str, record_index: int, masked: bool = False) -> Template:
-        """Add one message. ``masked=True`` means it is already a pattern key and is used as is."""
+    def add(self, message: str, record_index: int, masked: bool = False, source: str = "") -> Template:
+        """Add one message. ``masked=True`` means it is already a pattern key and is used as is.
+
+        ``source`` (the logger) keeps messages from different code apart: "Failed to write thumbnail <path>"
+        in one service and "Failed to enqueue thumbnail job" in another agree on 3 of 5 words, but they are
+        different failures. Copies of one service share a logger name, so their messages still merge.
+        """
         tokens = tokenize(message, masked) or ["<empty>"]
         if masked:
             # Pattern keys are exact: "GET /x -> 200" and "GET /x -> 503" must stay apart.
@@ -93,7 +98,7 @@ class TemplateMiner:
             exact.record_ids.append(record_index)
             return exact
         first = tokens[0] if not _PLACEHOLDER.match(tokens[0]) else "<*>"
-        key = (len(tokens), first)
+        key = (len(tokens), first, source)
         group = self._groups.setdefault(key, [])
 
         best: Template | None = None

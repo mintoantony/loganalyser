@@ -115,3 +115,17 @@ def test_reads_gzip(tmp_path):
         handle.write("2026-10-27 09:00:00 ERROR something broke\n")
     parsed = parse_file(path)
     assert parsed.records[0].level == "ERROR"
+
+
+def test_level_words_inside_the_message_stay_in_it():
+    lines = ["Oct 28 14:20:01 media-01 disk-monitor[812]: /var/data usage 91% (warning above 85%)",
+             "2026-10-28 14:20:01 Connection error while saving order",
+             "2026-10-28 14:20:02 error: payment declined",
+             "2026-10-28 14:20:03 [main] WARN com.shop.Cache - cache nearly full",
+             "2026-10-28 14:20:04 <error> disk read failed"]
+    got = [(r.level, r.message) for r in parse_lines(lines, "a.log").records]
+    assert got == [("WARN", "/var/data usage 91% (warning above 85%)"),
+                   ("ERROR", "Connection error while saving order"),
+                   ("ERROR", "payment declined"),
+                   ("WARN", "cache nearly full"),
+                   ("ERROR", "disk read failed")]

@@ -19,14 +19,28 @@ from .rules import load_rules
 _LOG_SUFFIXES = {".log", ".txt", ".out", ".err", ".json", ".jsonl", ".ndjson", ".gz", ".csv", ".trace"}
 
 
+def _looks_like_log(path: Path) -> bool:
+    """A log by its name, or a text file with no extension or a rotation number ("syslog", "messages.1")."""
+    name = path.name.lower()
+    if path.suffix.lower() in _LOG_SUFFIXES or ".log" in name:
+        return True
+    if name.startswith(".") or not (path.suffix == "" or path.suffix[1:].isdigit()):
+        return False
+    try:
+        with open(path, "rb") as handle:
+            return b"\0" not in handle.read(4096)
+    except OSError:
+        return False
+
+
 def collect(inputs: list[str]) -> list[Path]:
     """Expand files, folders and glob patterns into a sorted list of log files."""
     found: list[Path] = []
     for item in inputs:
         path = Path(item)
         if path.is_dir():
-            found += sorted(p for p in path.rglob("*") if p.is_file() and (
-                p.suffix.lower() in _LOG_SUFFIXES or ".log" in p.name.lower()))
+            found += sorted(p for p in path.rglob("*") if p.is_file() and _looks_like_log(p)
+                            and not any(part.startswith(".") for part in p.relative_to(path).parts[:-1]))
         elif path.is_file():
             found.append(path)
         else:

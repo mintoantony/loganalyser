@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION=1.1.0
+VERSION=1.1.1
 ARCH=$(uname -m)
 APP=dist/LogAnalyser.app
 [ -d .venv ] || python3 -m venv .venv

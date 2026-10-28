@@ -31,8 +31,8 @@ Installable builds:
 
 | Platform | How | Result |
 |---|---|---|
-| Windows | `powershell -ExecutionPolicy Bypass -File packaging\build_windows.ps1` | `dist\LogAnalyser\LogAnalyser.exe`, a portable zip, and, if [Inno Setup](https://jrsoftware.org/isinfo.php) is installed, `LogAnalyser-1.1.0-Windows-Setup.exe` |
-| macOS (run on a Mac) | `bash packaging/build_mac.sh` | `dist/LogAnalyser.app`, an installer wizard `LogAnalyser-1.1.0-macOS-Installer.pkg`, and a drag-to-Applications `.dmg` |
+| Windows | `powershell -ExecutionPolicy Bypass -File packaging\build_windows.ps1` | `dist\LogAnalyser\LogAnalyser.exe`, a portable zip, and, if [Inno Setup](https://jrsoftware.org/isinfo.php) is installed, `LogAnalyser-1.1.1-Windows-Setup.exe` |
+| macOS (run on a Mac) | `bash packaging/build_mac.sh` | `dist/LogAnalyser.app`, an installer wizard `LogAnalyser-1.1.1-macOS-Installer.pkg`, and a drag-to-Applications `.dmg` |
 | Both, in CI | push a `v*` tag or run the *Build desktop app* workflow (`.github/workflows/desktop.yml`) | installers as build artifacts |
 
 The Windows installer is an ordinary setup wizard, made for people with no technical background:
@@ -259,9 +259,11 @@ For logs that must stay on your machine, use the desktop app with Ollama instead
 ## What it does
 
 **Reads almost any log.** It works out the format line by line: JSON lines (including numeric
-Bunyan/pino levels), log4j/logback, Spring Boot, Python logging, PostgreSQL, syslog, and Apache/Nginx
-access logs. `.gz` files work too. Stack traces and tracebacks stay attached to the event that
-started them. When a line has no level, the level is guessed from its text.
+Bunyan/pino levels), log4j/logback, Spring Boot, Python logging, PostgreSQL, Redis, syslog, and
+Apache/Nginx access logs. `.gz` files work too. In a folder, it reads files with log-like names and
+also text files with no extension or a rotation number, such as `syslog` or `messages.1`. Stack traces
+and tracebacks stay attached to the event that started them. When a line has no level, the level is
+guessed from its text.
 
 **Finds patterns.** Messages that differ only in numbers, IDs, IPs, UUIDs or durations are grouped
 together, so 14,000 lines become a few dozen patterns. URL routes keep their shape:
@@ -282,7 +284,10 @@ Each ranking comes with its reasons in plain language, the first piece of eviden
 matched text highlighted), the chain of failures that followed, and steps to try.
 
 **Shows what changed just before.** It lists events that appear for the first time shortly before
-the first failure, such as a deploy, a batch job or a config reload.
+the first failure, such as a deploy, a batch job or a config reload. Deploys, restarts and config or
+log-level changes are looked for further back, because their effects can take a while to show (a
+disk that fills up slowly, for example). With a healthy run, anything that also happened there is
+not listed.
 
 **Matches logs.**
 - *Across files*: lines that share a request, trace, correlation or order ID are linked into one
